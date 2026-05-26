@@ -1450,6 +1450,20 @@ import Testing
     #expect(VoiceSelectionSummary.namesSummary(["旁白", "小林", "御姐", "老板"]) == "旁白、小林、御姐 等 4 个")
 }
 
+@Test func runtimeInstallerProgressParsesStepLines() {
+    let progress = RuntimeInstallerProgress.parse(line: "VOICE_STUDIO_STEP 3/8 Installing Python packages")
+
+    #expect(progress?.currentStep == 3)
+    #expect(progress?.totalSteps == 8)
+    #expect(progress?.message == "Installing Python packages")
+    #expect(progress?.fraction == 0.375)
+}
+
+@Test func runtimeInstallerProgressIgnoresRegularLogLines() {
+    #expect(RuntimeInstallerProgress.parse(line: "Installing mlx-audio...") == nil)
+    #expect(RuntimeInstallerProgress.parse(line: "VOICE_STUDIO_STEP bad Installing") == nil)
+}
+
 @Test func voiceSourceSelectionMakesBuiltinAndCustomVoiceExclusive() {
     let builtIn = VoiceProfile(id: "builtin", name: "Vivian", kind: .customVoice, language: "Chinese")
     let clone = VoiceProfile(id: "clone", name: "我的克隆音色", kind: .clonedVoice, language: "Chinese")

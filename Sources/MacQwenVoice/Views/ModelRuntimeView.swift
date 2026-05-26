@@ -98,7 +98,11 @@ struct ModelRuntimeView: View {
     private var runtimeInstallControls: some View {
         VStack(alignment: .leading, spacing: 8) {
             if !viewModel.runtimeHealth.realInferenceAvailable {
-                Text("首次在新 Mac 上使用时，需要先安装本机运行环境：MLX、mlx-audio、transformers、Hugging Face CLI 和 ffmpeg。安装完成后，模型下载和推理会使用 Voice Studio 的专用 Python 环境。")
+                Text("首次在新 Mac 上使用时，需要先安装本机运行环境：Python 3.12、MLX、mlx-audio、transformers、Hugging Face CLI 和 ffmpeg。安装完成后，模型下载和推理会使用 Voice Studio 的专用 Python 环境。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                Text("如果日志出现 LibreSSL / urllib3 / SSL 相关提示，通常是系统 Python 过旧；安装器会优先安装并切换 Homebrew python@3.12。如果本机没有 Homebrew 且没有 Python 3.12，日志会提示手动安装命令。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
@@ -115,8 +119,27 @@ struct ModelRuntimeView: View {
                     }
                 }
             }
-            if !viewModel.runtimeInstallLog.isEmpty {
-                DisclosureGroup("运行环境安装日志") {
+            if viewModel.isInstallingRuntime || !viewModel.runtimeInstallLog.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("安装进度")
+                            .font(.caption.weight(.semibold))
+                        Spacer()
+                        Text(viewModel.runtimeInstallPhase)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    ProgressView(value: viewModel.runtimeInstallProgress)
+                    Text(viewModel.runtimeInstallLog.isEmpty ? "等待安装输出..." : viewModel.runtimeInstallLog)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                        .lineLimit(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(8)
+                        .background(StudioTheme.subtleFill)
+                        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                }
+                DisclosureGroup("查看完整安装日志") {
                     Text(viewModel.runtimeInstallLog)
                         .font(.caption.monospaced())
                         .textSelection(.enabled)

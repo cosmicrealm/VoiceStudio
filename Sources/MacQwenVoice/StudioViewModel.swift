@@ -127,6 +127,8 @@ final class StudioViewModel: ObservableObject {
     @Published var runtimeHealth: RuntimeHealthViewState = .unknown
     @Published var isInstallingRuntime: Bool = false
     @Published var runtimeInstallLog: String = ""
+    @Published var runtimeInstallProgress: Double = 0
+    @Published var runtimeInstallPhase: String = "未开始"
     @Published var cloneReferenceAudioPath: String = ""
     @Published var cloneReferenceText: String = VoiceStudioDefaults.cloneReferenceTranscript
     @Published var clonePurpose: String = "本人声音或已获授权，用于本地旁白生成"
@@ -872,22 +874,48 @@ final class StudioViewModel: ObservableObject {
         }
 
         isInstallingRuntime = true
-        runtimeInstallLog = "开始安装运行环境...\n\(scriptURL.path)"
+        runtimeInstallProgress = 0.02
+        runtimeInstallPhase = "准备安装"
+        runtimeInstallLog = "开始安装运行环境...\n\(scriptURL.path)\n"
         statusMessage = "正在安装运行环境"
 
         Task.detached { [weak self] in
-            let result = Self.runRuntimeInstaller(scriptURL: scriptURL)
-            await MainActor.run {
-                self?.isInstallingRuntime = false
-                self?.runtimeInstallLog = result.output
-                if result.status == 0 {
-                    self?.statusMessage = "运行环境安装完成，正在重新检查"
-                    self?.backend.stop()
-                    self?.refreshRuntimeHealth()
-                } else {
-                    self?.statusMessage = "运行环境安装失败，请查看日志"
+            let result = await Self.runRuntimeInstaller(scriptURL: scriptURL) { chunk in
+                await MainActor.run {
+                    self?.appendRuntimeInstallOutput(chunk)
                 }
             }
+            await MainActor.run {
+                guard let self else { return }
+                self.isInstallingRuntime = false
+                if !result.output.isEmpty, !self.runtimeInstallLog.hasSuffix(result.output) {
+                    self.appendRuntimeInstallOutput("\n\(result.output)")
+                }
+                if result.status == 0 {
+                    self.runtimeInstallProgress = 1
+                    self.runtimeInstallPhase = "安装完成"
+                    self.statusMessage = "运行环境安装完成，正在重新检查"
+                    self.backend.stop()
+                    self.refreshRuntimeHealth()
+                } else {
+                    self.runtimeInstallPhase = "安装失败"
+                    self.statusMessage = "运行环境安装失败，请查看日志"
+                }
+            }
+        }
+    }
+
+    private func appendRuntimeInstallOutput(_ text: String) {
+        runtimeInstallLog += text
+        for line in text.components(separatedBy: .newlines) {
+            if let progress = RuntimeInstallerProgress.parse(line: line) {
+                runtimeInstallProgress = progress.fraction
+                runtimeInstallPhase = progress.message
+            }
+        }
+        let maxCharacters = 30_000
+        if runtimeInstallLog.count > maxCharacters {
+            runtimeInstallLog = String(runtimeInstallLog.suffix(maxCharacters))
         }
     }
 
@@ -3966,7 +3994,10 @@ final class StudioViewModel: ObservableObject {
         }
     }
 
-    nonisolated private static func runRuntimeInstaller(scriptURL: URL) -> (status: Int32, output: String) {
+    nonisolated private static func runRuntimeInstaller(
+        scriptURL: URL,
+        onOutput: @escaping @Sendable (String) async -> Void
+    ) async -> (status: Int32, output: String) {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
         process.arguments = [scriptURL.path]
@@ -3976,8 +4007,17 @@ final class StudioViewModel: ObservableObject {
         process.standardError = output
         do {
             try process.run()
+            var log = ""
+            while true {
+                let data = output.fileHandleForReading.availableData
+                if data.isEmpty {
+                    break
+                }
+                let text = String(data: data, encoding: .utf8) ?? ""
+                log += text
+                await onOutput(text)
+            }
             process.waitUntilExit()
-            let log = String(data: output.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
             return (process.terminationStatus, log)
         } catch {
             return (-1, error.localizedDescription)
