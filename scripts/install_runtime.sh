@@ -182,6 +182,18 @@ python_info "$PYTHON_BIN"
 log "Runtime directory: $RUNTIME_DIR"
 
 step 2 "创建 Voice Studio 专用 Python 环境"
+if [[ -x "$VENV_DIR/bin/python3" ]]; then
+  VENV_VERSION_KEY="$(python_version_key "$VENV_DIR/bin/python3" || printf '0\n')"
+  VENV_EXISTING_SSL="$(python_ssl_version "$VENV_DIR/bin/python3" || printf 'unknown\n')"
+  if [[ "$VENV_VERSION_KEY" -ne "$REQUIRED_PYTHON_KEY" || "$VENV_EXISTING_SSL" == *"LibreSSL"* ]]; then
+    log "Existing runtime venv is incompatible and will be rebuilt:"
+    python_info "$VENV_DIR/bin/python3" >&2 || true
+    rm -rf "$VENV_DIR"
+  else
+    log "Existing runtime venv is compatible; refreshing packages in place."
+    python_info "$VENV_DIR/bin/python3" >&2 || true
+  fi
+fi
 "$PYTHON_BIN" -m venv "$VENV_DIR"
 VENV_PYTHON="$VENV_DIR/bin/python3"
 
@@ -196,18 +208,21 @@ else
   log "Runtime Python SSL: $VENV_SSL_VERSION"
 fi
 
-PIP_ARGS=()
-if [[ -f "$CONSTRAINTS_FILE" ]]; then
-  PIP_ARGS+=(--constraint "$CONSTRAINTS_FILE")
-fi
+pip_install() {
+  if [[ -f "$CONSTRAINTS_FILE" ]]; then
+    "$VENV_PYTHON" -m pip install --upgrade --constraint "$CONSTRAINTS_FILE" "$@"
+  else
+    "$VENV_PYTHON" -m pip install --upgrade "$@"
+  fi
+}
 
 step 4 "升级 pip 基础工具"
 log "Upgrading pip tooling..."
-"$VENV_PYTHON" -m pip install --upgrade "${PIP_ARGS[@]}" pip setuptools wheel
+pip_install pip setuptools wheel
 
 step 5 "安装 MLX / mlx-audio / Transformers"
 log "Installing Voice Studio runtime packages..."
-"$VENV_PYTHON" -m pip install --upgrade "${PIP_ARGS[@]}" \
+pip_install \
   mlx \
   mlx-audio \
   transformers \

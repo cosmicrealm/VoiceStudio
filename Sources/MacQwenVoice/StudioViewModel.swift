@@ -4064,6 +4064,14 @@ struct RuntimeHealthViewState: Equatable {
     var modelStatuses: [RuntimeModelStatus]
     var message: String
 
+    var audioToolsAvailable: Bool {
+        dependencies["ffmpeg"] == true
+    }
+
+    var needsRuntimeRepair: Bool {
+        !realInferenceAvailable || !audioToolsAvailable
+    }
+
     static let unknown = RuntimeHealthViewState(
         runtime: "unknown",
         realInferenceAvailable: false,
@@ -4098,7 +4106,11 @@ struct RuntimeHealthViewState: Equatable {
         let rows = payload["models"] as? [[String: Any]] ?? []
         modelStatuses = rows.compactMap(RuntimeModelStatus.init(payload:))
         let suffix = runtimeSummary.isEmpty ? "" : "；\(runtimeSummary)"
-        message = realInferenceAvailable ? "真实 Qwen3-TTS 推理可用\(suffix)" : "真实推理不可用：请安装 mlx-audio / mlx，或检查 Python 环境\(suffix)"
+        if realInferenceAvailable, dependencies["ffmpeg"] != true {
+            message = "真实 Qwen3-TTS 推理可用，但 ffmpeg 未安装，音频导出、转码和合并可能失败\(suffix)"
+        } else {
+            message = realInferenceAvailable ? "真实 Qwen3-TTS 推理可用\(suffix)" : "真实推理不可用：请安装 mlx-audio / mlx，或检查 Python 环境\(suffix)"
+        }
     }
 
     private init(

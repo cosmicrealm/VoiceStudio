@@ -57,7 +57,7 @@ struct ModelRuntimeView: View {
                     }
                 }
                 Text(viewModel.runtimeHealth.message)
-                    .foregroundStyle(viewModel.runtimeHealth.realInferenceAvailable ? StudioTheme.success : StudioTheme.danger)
+                    .foregroundStyle(viewModel.runtimeHealth.realInferenceAvailable ? (viewModel.runtimeHealth.audioToolsAvailable ? StudioTheme.success : StudioTheme.warning) : StudioTheme.danger)
                     .textSelection(.enabled)
                 runtimeInstallControls
                 hardwareGrid
@@ -97,11 +97,17 @@ struct ModelRuntimeView: View {
 
     private var runtimeInstallControls: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if !viewModel.runtimeHealth.realInferenceAvailable {
+            if viewModel.runtimeHealth.needsRuntimeRepair {
                 Text("首次在新 Mac 上使用时，需要先安装本机运行环境：Python 3.12、MLX、mlx-audio、transformers、Hugging Face CLI 和 ffmpeg。安装完成后，模型下载和推理会使用 Voice Studio 的专用 Python 环境。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
+                if viewModel.runtimeHealth.realInferenceAvailable, !viewModel.runtimeHealth.audioToolsAvailable {
+                    Text("当前 MLX 推理已经可用，但 ffmpeg 缺失。请先安装 Homebrew，再执行 brew install python@3.12 ffmpeg，或使用安装/修复让程序自动尝试安装。")
+                        .font(.caption)
+                        .foregroundStyle(StudioTheme.warning)
+                        .textSelection(.enabled)
+                }
                 Text("如果日志出现 LibreSSL / urllib3 / SSL 相关提示，通常是系统 Python 过旧；安装器会优先安装并切换 Homebrew python@3.12。如果本机没有 Homebrew 且没有 Python 3.12，日志会提示手动安装命令。")
                     .font(.caption)
                     .foregroundStyle(.secondary)

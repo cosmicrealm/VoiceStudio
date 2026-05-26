@@ -16,6 +16,8 @@ Voice Studio 的 App 包不内置模型权重，也不直接内置完整 Python 
 ~/Library/Application Support/VoiceStudio/runtime/venv/
 ```
 
+如果检测到旧环境仍然是 Python 3.9、或 SSL 仍然来自 LibreSSL，安装器会自动删除并重建这个 venv，避免继续复用旧依赖。
+
 4. 安装推理和下载依赖：
 
 ```text
@@ -28,7 +30,7 @@ hf_transfer
 soundfile
 ```
 
-5. 检查 `ffmpeg` / `ffprobe`。如果 Homebrew 可用，会尝试自动安装 `ffmpeg`。
+5. 检查 `ffmpeg` / `ffprobe`。如果 Homebrew 可用，会尝试自动安装 `ffmpeg`，并把可执行文件记录到 Voice Studio 的 runtime/bin 目录。
 6. 验证 Python 依赖能否正常 import。
 
 安装器会直接查找 `/opt/homebrew/bin/brew` 和 `/usr/local/bin/brew`，所以即使从 Finder 打开 App、系统 PATH 没有 Homebrew，也能识别常见 Homebrew 安装位置。

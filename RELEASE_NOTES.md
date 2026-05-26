@@ -27,7 +27,7 @@ Voice Studio 0.01 是 Apple Silicon Mac 上的本地语音创作工具首个预�
 - Voice Tools：导入主流音频格式并统一转码合并。
 - 播放体验：播放/暂停、进度显示、生成结果进度条拖动。
 - 页面草稿状态保留：切到设置或其他页面再回来，不再重置创造音色和对话改写输入。
-- 模型页一键安装/修复本机运行环境，优先使用 Homebrew `python@3.12` 创建 Voice Studio 专用 Python venv，并显示安装进度、实时日志和 SSL/LibreSSL 兼容提示。
+- 模型页一键安装/修复本机运行环境，优先使用 Homebrew `python@3.12` 创建 Voice Studio 专用 Python venv，并显示安装进度、实时日志、旧 venv 重建提示和 SSL/LibreSSL 兼容提示。
 - 模型下载页：支持官方源、镜像源和自定义下载源。
 - 设置页：集中管理 DeepSeek API key。
 
