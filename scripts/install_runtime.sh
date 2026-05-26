@@ -10,6 +10,7 @@ TOTAL_STEPS=9
 REQUIRED_PYTHON_VERSION="3.12"
 REQUIRED_PYTHON_KEY=312
 PYTHON_FORMULA="python@3.12"
+PIP_INDEX_URL="${VOICE_STUDIO_PIP_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}"
 
 mkdir -p "$RUNTIME_DIR" "$BIN_DIR"
 
@@ -180,6 +181,7 @@ PYTHON_BIN="$(ensure_brew_python_if_needed "$PYTHON_BIN")"
 log "Using bootstrap Python:"
 python_info "$PYTHON_BIN"
 log "Runtime directory: $RUNTIME_DIR"
+log "Python package index: $PIP_INDEX_URL"
 
 step 2 "创建 Voice Studio 专用 Python 环境"
 if [[ -x "$VENV_DIR/bin/python3" ]]; then
@@ -210,9 +212,9 @@ fi
 
 pip_install() {
   if [[ -f "$CONSTRAINTS_FILE" ]]; then
-    "$VENV_PYTHON" -m pip install --upgrade --constraint "$CONSTRAINTS_FILE" "$@"
+    "$VENV_PYTHON" -m pip install --upgrade --index-url "$PIP_INDEX_URL" --trusted-host mirrors.aliyun.com --constraint "$CONSTRAINTS_FILE" "$@"
   else
-    "$VENV_PYTHON" -m pip install --upgrade "$@"
+    "$VENV_PYTHON" -m pip install --upgrade --index-url "$PIP_INDEX_URL" --trusted-host mirrors.aliyun.com "$@"
   fi
 }
 

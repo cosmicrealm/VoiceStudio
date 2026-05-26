@@ -61,7 +61,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Voice Studio 需要系统语音识别权限，把麦克风输入转换为待生成文字。</string>
     <key>NSDocumentsFolderUsageDescription</key>
-    <string>Voice Studio 默认在“文稿/VoiceStudio/Workspace”保存模型、项目、输出音频和本地数据库。</string>
+    <string>Voice Studio 默认在“用户主目录/VoiceStudio/Workspace”保存模型、项目、输出音频和本地数据库。</string>
     <key>NSSupportsAutomaticTermination</key>
     <false/>
     <key>NSSupportsSuddenTermination</key>

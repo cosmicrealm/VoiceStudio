@@ -9,7 +9,11 @@ public enum WorkspaceRootPreference {
     ) -> URL {
         let saved = defaults.string(forKey: key)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if !saved.isEmpty {
-            return URL(fileURLWithPath: saved, isDirectory: true).standardizedFileURL
+            let savedURL = URL(fileURLWithPath: saved, isDirectory: true).standardizedFileURL
+            if isDefaultRoot(savedURL, homeDirectory: homeDirectory) {
+                return AppPaths.defaultRoot(homeDirectory: homeDirectory).standardizedFileURL
+            }
+            return savedURL
         }
         return AppPaths.defaultRoot(homeDirectory: homeDirectory).standardizedFileURL
     }
@@ -26,6 +30,11 @@ public enum WorkspaceRootPreference {
         _ root: URL,
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser
     ) -> Bool {
-        root.standardizedFileURL.path == AppPaths.defaultRoot(homeDirectory: homeDirectory).standardizedFileURL.path
+        let path = root.standardizedFileURL.path
+        if path == AppPaths.defaultRoot(homeDirectory: homeDirectory).standardizedFileURL.path {
+            return true
+        }
+        return AppPaths.legacyDocumentsWorkspaceRoots(homeDirectory: homeDirectory)
+            .contains { $0.standardizedFileURL.path == path }
     }
 }

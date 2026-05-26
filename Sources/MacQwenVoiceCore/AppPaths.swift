@@ -33,7 +33,7 @@ public struct AppPaths: Sendable {
 
     public func ensureDirectories() throws {
         let manager = FileManager.default
-        for url in [root, models, sharedModels, projects, outputs, references, clonePrompts, cache, logs, config, databaseDirectory] {
+        for url in [root, models, projects, outputs, references, clonePrompts, cache, logs, config, databaseDirectory] {
             try manager.createDirectory(at: url, withIntermediateDirectories: true)
         }
     }
@@ -44,7 +44,6 @@ public struct AppPaths: Sendable {
 
     public static func defaultRoot(homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser) -> URL {
         homeDirectory
-            .appendingPathComponent("Documents", isDirectory: true)
             .appendingPathComponent("VoiceStudio", isDirectory: true)
             .appendingPathComponent("Workspace", isDirectory: true)
     }
@@ -52,6 +51,9 @@ public struct AppPaths: Sendable {
     public static func legacyDocumentsWorkspaceRoots(homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser) -> [URL] {
         let documents = homeDirectory.appendingPathComponent("Documents", isDirectory: true)
         return [
+            documents
+                .appendingPathComponent("VoiceStudio", isDirectory: true)
+                .appendingPathComponent("Workspace", isDirectory: true),
             documents.appendingPathComponent("MacQwenVoice Workspace", isDirectory: true),
             documents
                 .appendingPathComponent("MacQwenVoice", isDirectory: true)

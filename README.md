@@ -165,7 +165,7 @@ scripts/package_release.sh
 默认工作区位于：
 
 ```text
-~/Documents/VoiceStudio/Workspace/
+~/VoiceStudio/Workspace/
 ```
 
 模型、项目、参考音频、生成音频、数据库和配置都会保存在本机工作区内。

@@ -1249,18 +1249,31 @@ import Testing
     #expect(official.processEnvironment.isEmpty)
 }
 
-@Test func appPathsDefaultToVisibleDocumentsWorkspaceAndExposeLegacyRoot() {
+@Test func appPathsDefaultToHomeWorkspaceAndExposeLegacyDocumentRoots() {
     let home = URL(fileURLWithPath: "/Users/example", isDirectory: true)
 
-    #expect(AppPaths.defaultRoot(homeDirectory: home).path == "/Users/example/Documents/VoiceStudio/Workspace")
+    #expect(AppPaths.defaultRoot(homeDirectory: home).path == "/Users/example/VoiceStudio/Workspace")
     #expect(AppPaths.legacyApplicationSupportRoot(homeDirectory: home).path == "/Users/example/Library/Application Support/MacQwenVoice")
     #expect(AppPaths.legacyDocumentsWorkspaceRoots(homeDirectory: home).map(\.path) == [
+        "/Users/example/Documents/VoiceStudio/Workspace",
         "/Users/example/Documents/MacQwenVoice Workspace",
         "/Users/example/Documents/MacQwenVoice/Workspace"
     ])
-    #expect(AppPaths(root: AppPaths.defaultRoot(homeDirectory: home)).database.path == "/Users/example/Documents/VoiceStudio/Workspace/database/MacQwenVoice.sqlite")
-    #expect(AppPaths(root: AppPaths.defaultRoot(homeDirectory: home)).projects.path == "/Users/example/Documents/VoiceStudio/Workspace/projects")
-    #expect(AppPaths(root: AppPaths.defaultRoot(homeDirectory: home)).deepSeekConfig.path == "/Users/example/Documents/VoiceStudio/Workspace/config/deepseek.json")
+    #expect(AppPaths(root: AppPaths.defaultRoot(homeDirectory: home)).database.path == "/Users/example/VoiceStudio/Workspace/database/MacQwenVoice.sqlite")
+    #expect(AppPaths(root: AppPaths.defaultRoot(homeDirectory: home)).projects.path == "/Users/example/VoiceStudio/Workspace/projects")
+    #expect(AppPaths(root: AppPaths.defaultRoot(homeDirectory: home)).deepSeekConfig.path == "/Users/example/VoiceStudio/Workspace/config/deepseek.json")
+    #expect(!FileManager.default.fileExists(atPath: AppPaths(root: AppPaths.defaultRoot(homeDirectory: home)).sharedModels.path))
+}
+
+@Test func appPathsEnsureDirectoriesDoesNotCreateSharedModelsDirectory() throws {
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: root) }
+    let paths = AppPaths(root: root)
+
+    try paths.ensureDirectories()
+
+    #expect(FileManager.default.fileExists(atPath: paths.models.path))
+    #expect(!FileManager.default.fileExists(atPath: paths.sharedModels.path))
 }
 
 @Test func workspaceRootPreferencePersistsCustomRootAndCanResetToDefault() throws {
@@ -1270,7 +1283,7 @@ import Testing
     let home = URL(fileURLWithPath: "/Users/example", isDirectory: true)
     let customRoot = URL(fileURLWithPath: "/Volumes/FastDisk/VoiceStudio Workspace", isDirectory: true)
 
-    #expect(WorkspaceRootPreference.load(defaults: defaults, homeDirectory: home).path == "/Users/example/Documents/VoiceStudio/Workspace")
+    #expect(WorkspaceRootPreference.load(defaults: defaults, homeDirectory: home).path == "/Users/example/VoiceStudio/Workspace")
     #expect(WorkspaceRootPreference.isDefaultRoot(AppPaths.defaultRoot(homeDirectory: home), homeDirectory: home))
 
     WorkspaceRootPreference.save(customRoot, defaults: defaults)
@@ -1278,7 +1291,20 @@ import Testing
     #expect(!WorkspaceRootPreference.isDefaultRoot(customRoot, homeDirectory: home))
 
     WorkspaceRootPreference.reset(defaults: defaults)
-    #expect(WorkspaceRootPreference.load(defaults: defaults, homeDirectory: home).path == "/Users/example/Documents/VoiceStudio/Workspace")
+    #expect(WorkspaceRootPreference.load(defaults: defaults, homeDirectory: home).path == "/Users/example/VoiceStudio/Workspace")
+}
+
+@Test func workspaceRootPreferenceTreatsOldDocumentsDefaultAsNewDefault() throws {
+    let suiteName = "VoiceStudioLegacyWorkspaceRootPreferenceTests-\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suiteName))
+    defaults.removePersistentDomain(forName: suiteName)
+    let home = URL(fileURLWithPath: "/Users/example", isDirectory: true)
+    let oldDefault = URL(fileURLWithPath: "/Users/example/Documents/VoiceStudio/Workspace", isDirectory: true)
+
+    WorkspaceRootPreference.save(oldDefault, defaults: defaults)
+
+    #expect(WorkspaceRootPreference.load(defaults: defaults, homeDirectory: home).path == "/Users/example/VoiceStudio/Workspace")
+    #expect(WorkspaceRootPreference.isDefaultRoot(oldDefault, homeDirectory: home))
 }
 
 @Test func workspaceStartupPolicyHidesManualBannerDuringAutomaticInitialization() {
@@ -1371,14 +1397,17 @@ import Testing
     #expect(try migratedDB.listGenerations().first { $0.id == "generation-1" }?.audioPath == target.appendingPathComponent("outputs/result.wav").path)
 }
 
-@Test func workspaceRelocationMovesOldDocumentsWorkspaceAndRewritesPaths() throws {
+@Test func workspaceRelocationCopiesOldDocumentsWorkspaceAndRewritesPaths() throws {
     let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
     defer { try? FileManager.default.removeItem(at: base) }
-    let legacy = base.appendingPathComponent("Documents/MacQwenVoice Workspace", isDirectory: true)
-    let target = base.appendingPathComponent("Documents/VoiceStudio/Workspace", isDirectory: true)
+    let legacy = base.appendingPathComponent("Documents/VoiceStudio/Workspace", isDirectory: true)
+    let target = base.appendingPathComponent("VoiceStudio/Workspace", isDirectory: true)
     let model = legacy.appendingPathComponent("models/mlx-community__Qwen3-TTS-12Hz-0.6B-Base-8bit", isDirectory: true)
     try FileManager.default.createDirectory(at: model, withIntermediateDirectories: true)
     try "weights".write(to: model.appendingPathComponent("model.safetensors"), atomically: true, encoding: .utf8)
+    let config = legacy.appendingPathComponent("config/deepseek.json")
+    try FileManager.default.createDirectory(at: config.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try "{}".write(to: config, atomically: true, encoding: .utf8)
 
     let legacyDB = try AppDatabase(path: legacy.appendingPathComponent("database/MacQwenVoice.sqlite").path)
     try legacyDB.saveModelState(ModelState(id: "qwen3-tts-12hz-0.6b-base", localPath: model.path, status: .ready, bytes: 7))
@@ -1386,8 +1415,10 @@ import Testing
     let result = try WorkspaceMigrator.relocateWorkspaceIfNeeded(from: [legacy], to: target, catalog: .default)
 
     #expect(result.didMigrate)
-    #expect(!FileManager.default.fileExists(atPath: legacy.path))
+    #expect(FileManager.default.fileExists(atPath: legacy.path))
     #expect(FileManager.default.fileExists(atPath: target.appendingPathComponent("models/mlx-community__Qwen3-TTS-12Hz-0.6B-Base-8bit/model.safetensors").path))
+    #expect(FileManager.default.fileExists(atPath: target.appendingPathComponent("config/deepseek.json").path))
+    #expect(!FileManager.default.fileExists(atPath: target.appendingPathComponent("models/shared").path))
     let migratedDB = try AppDatabase(path: target.appendingPathComponent("database/MacQwenVoice.sqlite").path)
     let migratedState = try #require(migratedDB.listModelStates().first { $0.id == "qwen3-tts-12hz-0.6b-base" })
     #expect(migratedState.localPath == target.appendingPathComponent("models/mlx-community__Qwen3-TTS-12Hz-0.6B-Base-8bit").path)

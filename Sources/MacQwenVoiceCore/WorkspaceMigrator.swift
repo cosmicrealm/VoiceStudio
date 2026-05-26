@@ -30,18 +30,10 @@ public enum WorkspaceMigrator {
         if !hasWorkspaceContent(at: targetRoot, fileManager: fileManager) {
             for legacyRoot in existingLegacyRoots {
                 do {
-                    try moveWorkspace(from: legacyRoot, to: targetRoot, fileManager: fileManager)
-                    try targetPaths.ensureDirectories()
-                    if fileManager.fileExists(atPath: targetPaths.database.path) {
-                        try rewriteDatabasePaths(
-                            databasePath: targetPaths.database.path,
-                            legacyRoot: legacyRoot,
-                            targetPaths: targetPaths,
-                            catalog: catalog
-                        )
+                    let result = try migrateIfNeeded(from: legacyRoot, to: targetRoot, catalog: catalog, fileManager: fileManager)
+                    if result.didMigrate {
+                        return WorkspaceMigrationResult(didMigrate: true, migratedItems: ["workspace"])
                     }
-                    _ = try? SpeechTokenizerStore.normalize(in: targetPaths.models, fileManager: fileManager)
-                    return WorkspaceMigrationResult(didMigrate: true, migratedItems: ["workspace"])
                 } catch {
                     continue
                 }
@@ -71,7 +63,7 @@ public enum WorkspaceMigrator {
         try targetPaths.ensureDirectories()
         var migrated: [String] = []
 
-        for directoryName in ["models", "projects", "outputs", "references", "clone_prompts", "cache", "logs"] {
+        for directoryName in ["models", "projects", "outputs", "references", "clone_prompts", "cache", "logs", "config"] {
             let source = legacyRoot.appendingPathComponent(directoryName, isDirectory: true)
             let target = targetRoot.appendingPathComponent(directoryName, isDirectory: true)
             if try copyDirectoryContentsIfNeeded(from: source, to: target, fileManager: fileManager) {
@@ -109,31 +101,12 @@ public enum WorkspaceMigrator {
                 catalog: catalog
             )
         }
-        _ = try? SpeechTokenizerStore.normalize(in: targetPaths.models, fileManager: fileManager)
-
         return WorkspaceMigrationResult(didMigrate: !migrated.isEmpty, migratedItems: migrated)
-    }
-
-    private static func moveWorkspace(from source: URL, to target: URL, fileManager: FileManager) throws {
-        try fileManager.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if fileManager.fileExists(atPath: target.path) {
-            if try isDirectoryEmpty(target, fileManager: fileManager) {
-                try fileManager.removeItem(at: target)
-            } else {
-                throw CocoaError(.fileWriteFileExists)
-            }
-        }
-        try fileManager.moveItem(at: source, to: target)
     }
 
     private static func hasWorkspaceContent(at root: URL, fileManager: FileManager) -> Bool {
         guard fileManager.fileExists(atPath: root.path) else { return false }
         return ((try? fileManager.contentsOfDirectory(atPath: root.path)) ?? []).isEmpty == false
-    }
-
-    private static func isDirectoryEmpty(_ url: URL, fileManager: FileManager) throws -> Bool {
-        guard fileManager.fileExists(atPath: url.path) else { return true }
-        return try fileManager.contentsOfDirectory(atPath: url.path).isEmpty
     }
 
     private static func copyDirectoryContentsIfNeeded(

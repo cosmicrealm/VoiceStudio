@@ -30,6 +30,14 @@ hf_transfer
 soundfile
 ```
 
+安装器默认使用阿里云 PyPI 镜像：
+
+```text
+https://mirrors.aliyun.com/pypi/simple/
+```
+
+如需改回官方源或其他镜像，可在运行安装脚本前设置 `VOICE_STUDIO_PIP_INDEX_URL`。
+
 其中 `huggingface_hub[cli]` 会提供模型下载命令 `hf`。安装器会把 venv 中的 `hf` 固定链接到：
 
 ```text
@@ -96,7 +104,7 @@ python3.12 -m pip install --upgrade "huggingface_hub[cli]" hf_transfer
 运行环境安装完成后，再回到 `模型` 页面下载模型。模型会保存在当前 workspace：
 
 ```text
-~/Documents/VoiceStudio/Workspace/models/
+~/VoiceStudio/Workspace/models/
 ```
 
 如果模型下载失败，优先查看每个模型卡片下方的下载日志。常见原因包括网络不可达、Hugging Face 访问受限、镜像源不可用、workspace 路径无写权限。

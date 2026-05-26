@@ -243,7 +243,6 @@ final class StudioViewModel: ObservableObject {
                     migratedItems: Array(Set(documentsMigration.migratedItems + supportMigration.migratedItems)).sorted()
                 )
                 try paths.ensureDirectories()
-                _ = try? SpeechTokenizerStore.normalize(in: paths.models)
                 let database = try AppDatabase(path: paths.database.path)
                 return (migration, database)
             }.value
@@ -3420,7 +3419,6 @@ final class StudioViewModel: ObservableObject {
         do {
             downloadLogs[spec.id] = result.output
             if result.succeeded {
-                _ = try? SpeechTokenizerStore.normalize(in: paths.models)
                 try database?.saveModelState(ModelState(id: spec.id, localPath: localPath, status: .ready, bytes: folderSize(at: URL(fileURLWithPath: localPath))))
                 statusMessage = "\(spec.displayName) 下载完成"
             } else {
