@@ -42,14 +42,11 @@ Voice-Studio-0.01-macOS-arm64.zip.sha256
 Release 展示资源：
 
 ```text
-Voice-Studio-0.01-dialogue-demo.html
-Voice-Studio-0.01-dialogue-demo.html.sha256
 Voice-Studio-0.01-dialogue-demo.webm
 Voice-Studio-0.01-dialogue-demo.webm.sha256
-Voice-Studio-0.01-dialogue-demo.transcript.json
 ```
 
-Release 页面提供可直接播放的 `Voice-Studio-0.01-dialogue-demo.webm`。`Voice-Studio-0.01-dialogue-demo.html` 是离线备用的自包含可播放页面，已把同一段 WebM 音频嵌入文件，并在旁边展示 `transcript.json` 里的对应脚本。源码 README 已加入 Script Studio 对话生成、VoiceDesign 和 DeepSeek 对话改写截图。
+Release 页面提供可直接播放的 `Voice-Studio-0.01-dialogue-demo.webm`。源码 README 已加入合成文本、可播放音频和 Script Studio 对话生成、VoiceDesign、DeepSeek 对话改写界面预览。
 
 解压后打开：
 

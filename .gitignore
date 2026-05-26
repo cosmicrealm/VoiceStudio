@@ -49,3 +49,5 @@ config/deepseek.json
 *.webm
 
 .DS_Store
+
+AGENTS.md
