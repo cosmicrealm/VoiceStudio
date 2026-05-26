@@ -62,6 +62,9 @@ enum VoiceStudioRuntimeEnvironment {
         }
         candidates.append(URL(fileURLWithPath: "/opt/homebrew/bin/\(name)"))
         candidates.append(URL(fileURLWithPath: "/usr/local/bin/\(name)"))
+        candidates.append(URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("opt/anaconda3/bin/\(name)"))
+        candidates.append(URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("anaconda3/bin/\(name)"))
+        candidates.append(URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("miniconda3/bin/\(name)"))
         for candidate in candidates where FileManager.default.isExecutableFile(atPath: candidate.path) {
             return candidate
         }
@@ -79,6 +82,9 @@ enum VoiceStudioRuntimeEnvironment {
             runtimeBinDirectory.path,
             "/opt/homebrew/bin",
             "/usr/local/bin",
+            URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("opt/anaconda3/bin").path,
+            URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("anaconda3/bin").path,
+            URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("miniconda3/bin").path,
         ]
         if let bundledRuntimeBinDirectory {
             pathParts.append(bundledRuntimeBinDirectory.path)

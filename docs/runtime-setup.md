@@ -30,6 +30,12 @@ hf_transfer
 soundfile
 ```
 
+其中 `huggingface_hub[cli]` 会提供模型下载命令 `hf`。安装器会把 venv 中的 `hf` 固定链接到：
+
+```text
+~/Library/Application Support/VoiceStudio/runtime/bin/hf
+```
+
 5. 检查 `ffmpeg` / `ffprobe`。如果 Homebrew 可用，会尝试自动安装 `ffmpeg`，并把可执行文件记录到 Voice Studio 的 runtime/bin 目录。
 6. 验证 Python 依赖能否正常 import。
 
@@ -68,6 +74,22 @@ brew install python@3.12 ffmpeg
 ```
 
 如果不能安装 Homebrew，但系统里已经有可用的 Python 3.12，安装器会继续创建专用环境；如果只有系统 Python 3.9 或其他非 3.12 版本，安装器会停止并在日志里给出 Homebrew / `python@3.12` 的安装命令。这样做是为了避免用系统 Python 3.9 + LibreSSL 创建出不可用的运行环境。
+
+## hf 命令缺失
+
+如果模型下载日志出现：
+
+```text
+env: hf: No such file or directory
+```
+
+说明当前 App 进程找不到 Hugging Face CLI。推荐先重新运行 `安装/修复运行环境`。也可以手动安装：
+
+```bash
+python3.12 -m pip install --upgrade "huggingface_hub[cli]" hf_transfer
+```
+
+如果你已经在 Anaconda/Miniconda 里安装了 `hf`，新版 App 也会尝试查找常见路径，例如 `~/opt/anaconda3/bin/hf`、`~/anaconda3/bin/hf` 和 `~/miniconda3/bin/hf`。但正式运行仍建议使用 Voice Studio 自己的 runtime venv，避免 Finder 启动时 PATH 不一致。
 
 ## 模型下载
 

@@ -213,7 +213,7 @@ Voice Tools 用于音频整理和合并。支持 `wav`、`mp3`、`m4a`、`aac`�
 - 网络连接，用于首次安装运行环境和下载模型。
 - Python 3.12。推荐使用 Homebrew `python@3.12`，模型页的一键安装会优先用它创建 Voice Studio 专用运行环境。
 - `ffmpeg`。`模型` 页面的一键安装会在 Homebrew 可用时自动安装。
-- 本地语音运行依赖，包括 `mlx`、`mlx_audio`、`transformers`、`numpy`。`模型` 页面的一键安装会把这些依赖装到 Voice Studio 专用 Python 环境。
+- 本地语音运行依赖，包括 `mlx`、`mlx_audio`、`transformers`、`numpy`、`huggingface_hub[cli]` 和 `hf_transfer`。`模型` 页面的一键安装会把这些依赖装到 Voice Studio 专用 Python 环境，并提供 `hf` 模型下载命令。
 
 如需指定 Python 环境，可以在启动前设置：
 

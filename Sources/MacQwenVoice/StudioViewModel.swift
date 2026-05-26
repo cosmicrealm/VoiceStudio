@@ -3978,8 +3978,19 @@ final class StudioViewModel: ObservableObject {
     nonisolated private static func runHF(arguments: [String], environment processEnvironment: [String: String]) -> (status: Int32, output: String) {
         let process = Process()
         let hfExecutable = VoiceStudioRuntimeEnvironment.executableURL(named: "hf")
-        process.executableURL = hfExecutable ?? URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = hfExecutable == nil ? ["hf"] + arguments : arguments
+        guard let hfExecutable else {
+            return (
+                -1,
+                """
+                未找到 Hugging Face CLI 命令 hf。
+                请在模型页运行“安装/修复运行环境”，或手动执行：
+                python3.12 -m pip install --upgrade "huggingface_hub[cli]" hf_transfer
+                已检查 Voice Studio runtime、Homebrew、常见 Anaconda/Miniconda 路径和当前 PATH。
+                """
+            )
+        }
+        process.executableURL = hfExecutable
+        process.arguments = arguments
         process.environment = VoiceStudioRuntimeEnvironment.mergedEnvironment(extra: processEnvironment)
         let output = Pipe()
         process.standardOutput = output
@@ -4068,8 +4079,12 @@ struct RuntimeHealthViewState: Equatable {
         dependencies["ffmpeg"] == true
     }
 
+    var downloadToolsAvailable: Bool {
+        dependencies["hf"] == true
+    }
+
     var needsRuntimeRepair: Bool {
-        !realInferenceAvailable || !audioToolsAvailable
+        !realInferenceAvailable || !audioToolsAvailable || !downloadToolsAvailable
     }
 
     static let unknown = RuntimeHealthViewState(
@@ -4106,7 +4121,9 @@ struct RuntimeHealthViewState: Equatable {
         let rows = payload["models"] as? [[String: Any]] ?? []
         modelStatuses = rows.compactMap(RuntimeModelStatus.init(payload:))
         let suffix = runtimeSummary.isEmpty ? "" : "；\(runtimeSummary)"
-        if realInferenceAvailable, dependencies["ffmpeg"] != true {
+        if realInferenceAvailable, dependencies["hf"] != true {
+            message = "真实 Qwen3-TTS 推理可用，但 Hugging Face CLI（hf）未安装，模型下载会失败\(suffix)"
+        } else if realInferenceAvailable, dependencies["ffmpeg"] != true {
             message = "真实 Qwen3-TTS 推理可用，但 ffmpeg 未安装，音频导出、转码和合并可能失败\(suffix)"
         } else {
             message = realInferenceAvailable ? "真实 Qwen3-TTS 推理可用\(suffix)" : "真实推理不可用：请安装 mlx-audio / mlx，或检查 Python 环境\(suffix)"

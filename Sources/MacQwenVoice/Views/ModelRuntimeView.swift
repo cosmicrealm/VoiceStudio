@@ -108,6 +108,12 @@ struct ModelRuntimeView: View {
                         .foregroundStyle(StudioTheme.warning)
                         .textSelection(.enabled)
                 }
+                if viewModel.runtimeHealth.realInferenceAvailable, !viewModel.runtimeHealth.downloadToolsAvailable {
+                    Text("当前缺少 Hugging Face CLI 命令 hf，模型下载会失败。安装/修复会执行 pip install -U \"huggingface_hub[cli]\" hf_transfer，并把 hf 加入 Voice Studio runtime PATH。")
+                        .font(.caption)
+                        .foregroundStyle(StudioTheme.warning)
+                        .textSelection(.enabled)
+                }
                 Text("如果日志出现 LibreSSL / urllib3 / SSL 相关提示，通常是系统 Python 过旧；安装器会优先安装并切换 Homebrew python@3.12。如果本机没有 Homebrew 且没有 Python 3.12，日志会提示手动安装命令。")
                     .font(.caption)
                     .foregroundStyle(.secondary)

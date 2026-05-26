@@ -58,6 +58,7 @@ class BackendContractTests(unittest.TestCase):
             self.assertIn("real_inference_available", result)
             self.assertIn("dependencies", result)
             self.assertIn("mlx_audio", result["dependencies"])
+            self.assertIn("hf", result["dependencies"])
             self.assertNotIn("qwen_tts", result["dependencies"])
             self.assertIn("qwen_tts", result["optional_dependencies"])
             backend.close()

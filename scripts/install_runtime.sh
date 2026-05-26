@@ -231,6 +231,18 @@ pip_install \
   hf_transfer \
   soundfile
 
+if [[ -x "$VENV_DIR/bin/hf" ]]; then
+  ln -sf "$VENV_DIR/bin/hf" "$BIN_DIR/hf"
+elif [[ -x "$VENV_DIR/bin/huggingface-cli" ]]; then
+  ln -sf "$VENV_DIR/bin/huggingface-cli" "$BIN_DIR/hf"
+else
+  log "Hugging Face CLI command 'hf' was not installed."
+  log "Try manually: $VENV_PYTHON -m pip install --upgrade 'huggingface_hub[cli]' hf_transfer"
+  exit 1
+fi
+"$BIN_DIR/hf" --help >/dev/null
+log "hf: $BIN_DIR/hf"
+
 step 6 "检查 ffmpeg / ffprobe"
 ensure_homebrew_package "ffmpeg" "ffmpeg"
 

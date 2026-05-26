@@ -307,6 +307,7 @@ class QwenVoiceBackend:
             "mlx": self._module_available("mlx"),
             "transformers": self._module_available("transformers"),
             "ffmpeg": self._ffmpeg_binary() is not None,
+            "hf": self._binary_path("hf") is not None,
         }
         hardware = self._mlx_hardware_info()
         optional_dependencies = {
@@ -335,6 +336,7 @@ class QwenVoiceBackend:
             "runtime": "mlx-audio",
             "real_inference_available": all(dependencies.get(name) for name in inference_dependencies),
             "audio_tools_available": dependencies["ffmpeg"],
+            "download_tools_available": dependencies["hf"],
             "dependencies": dependencies,
             "optional_dependencies": optional_dependencies,
             "hardware": hardware,
@@ -803,7 +805,8 @@ class QwenVoiceBackend:
         metal = "available" if hardware.get("metal_available") else "unavailable"
         gpu = "GPU" if hardware.get("gpu_available") else "CPU/unknown"
         ffmpeg = "available" if dependencies.get("ffmpeg") else "unavailable"
-        return f"mlx-audio on {device} ({gpu}); Metal {metal}; ffmpeg {ffmpeg}."
+        hf = "available" if dependencies.get("hf") else "unavailable"
+        return f"mlx-audio on {device} ({gpu}); Metal {metal}; ffmpeg {ffmpeg}; hf {hf}."
 
     def _model_local_path(self, spec: dict[str, Any]) -> Path:
         slug = str(spec["repository"]).replace("/", "__")
