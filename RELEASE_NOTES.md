@@ -35,8 +35,8 @@ Voice Studio 0.01 是 Apple Silicon Mac 上的本地语音创作工具首个预�
 发布包：
 
 ```text
-Voice-Studio-0.01-macOS-arm64.zip
-Voice-Studio-0.01-macOS-arm64.zip.sha256
+Voice-Studio-0.01-macOS-arm64.dmg
+Voice-Studio-0.01-macOS-arm64.dmg.sha256
 ```
 
 Release 展示资源：
@@ -48,10 +48,10 @@ Voice-Studio-0.01-dialogue-demo.webm.sha256
 
 Release 页面提供可直接播放的 `Voice-Studio-0.01-dialogue-demo.webm`。源码 README 已加入合成文本、可播放音频和 Script Studio 对话生成、VoiceDesign、DeepSeek 对话改写界面预览。
 
-解压后打开：
+打开 DMG 后，将 App 拖入 Applications，再启动：
 
 ```bash
-open "Voice Studio.app"
+open "/Applications/Voice Studio.app"
 ```
 
 首次打开如果 macOS 提示未验证开发者，请在系统安全设置中允许打开。当前 0.01 使用 ad-hoc codesign，尚未 notarize。

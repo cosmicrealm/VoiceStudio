@@ -6,6 +6,7 @@ xcuserdata/
 dist/
 *.app/
 *.dSYM/
+*.dmg
 *.zip
 *.sha256
 

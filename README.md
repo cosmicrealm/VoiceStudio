@@ -4,6 +4,12 @@ Voice Studio 是面向 Apple Silicon Mac 的本地语音创作工具，提供精
 
 当前发布版本：`0.01`。
 
+## 下载与示例
+
+- [下载 macOS DMG 安装包](https://github.com/cosmicrealm/VoiceStudio/releases/download/v0.01/Voice-Studio-0.01-macOS-arm64.dmg)
+- [播放 0.01 对话音频示例](https://github.com/cosmicrealm/VoiceStudio/releases/download/v0.01/Voice-Studio-0.01-dialogue-demo.webm)
+- [查看完整 Release](https://github.com/cosmicrealm/VoiceStudio/releases/tag/v0.01)
+
 ## 核心功能
 
 - 精品音色生成：选择内置音色，输入文本后快速生成旁白、讲解、口播或角色语音。
@@ -101,7 +107,7 @@ Voice Studio 是面向 Apple Silicon Mac 的本地语音创作工具，提供精
         </details>
       </td>
       <td width="28%">
-        <audio controls preload="metadata" src="https://github.com/cosmicrealm/VoiceStudio/releases/download/v0.01/Voice-Studio-0.01-dialogue-demo.webm"></audio>
+        <a href="https://github.com/cosmicrealm/VoiceStudio/releases/download/v0.01/Voice-Studio-0.01-dialogue-demo.webm">播放音频示例</a>
       </td>
     </tr>
   </tbody>
@@ -127,11 +133,9 @@ Voice Studio 是面向 Apple Silicon Mac 的本地语音创作工具，提供精
 
 从 Release 页面下载：
 
-```text
-Voice-Studio-0.01-macOS-arm64.zip
-```
+[Voice-Studio-0.01-macOS-arm64.dmg](https://github.com/cosmicrealm/VoiceStudio/releases/download/v0.01/Voice-Studio-0.01-macOS-arm64.dmg)
 
-解压后打开 `Voice Studio.app`。首次打开如果 macOS 提示未验证开发者，请在系统安全设置中允许打开。
+打开 DMG 后，将 `Voice Studio.app` 拖入 `Applications`。首次打开如果 macOS 提示未验证开发者，请在系统安全设置中允许打开。
 
 ### 从源码运行
 

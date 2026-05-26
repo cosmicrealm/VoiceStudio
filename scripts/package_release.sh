@@ -6,40 +6,37 @@ APP_NAME="Voice Studio"
 RELEASE_VERSION="0.01"
 DIST_DIR="$ROOT_DIR/dist"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
-ARCHIVE_NAME="Voice-Studio-${RELEASE_VERSION}-macOS-arm64.zip"
-ARCHIVE_PATH="$DIST_DIR/$ARCHIVE_NAME"
-CHECKSUM_PATH="$ARCHIVE_PATH.sha256"
+DMG_NAME="Voice-Studio-${RELEASE_VERSION}-macOS-arm64.dmg"
+DMG_PATH="$DIST_DIR/$DMG_NAME"
+DMG_CHECKSUM_PATH="$DMG_PATH.sha256"
+DMG_STAGE_DIR="$DIST_DIR/dmg-stage"
 DEMO_AUDIO_PATH="$DIST_DIR/Voice-Studio-${RELEASE_VERSION}-dialogue-demo.webm"
 DEMO_AUDIO_CHECKSUM_PATH="$DEMO_AUDIO_PATH.sha256"
-DEMO_TRANSCRIPT_PATH="$DIST_DIR/Voice-Studio-${RELEASE_VERSION}-dialogue-demo.transcript.json"
-DEMO_PLAYER_PATH="$DIST_DIR/Voice-Studio-${RELEASE_VERSION}-dialogue-demo.html"
-DEMO_PLAYER_CHECKSUM_PATH="$DEMO_PLAYER_PATH.sha256"
 
 cd "$ROOT_DIR"
 "$ROOT_DIR/scripts/build_app_bundle.sh" >/dev/null
 
-rm -f "$ARCHIVE_PATH" "$CHECKSUM_PATH"
-rm -rf "$DIST_DIR/MacQwenVoice.app"
-ditto -c -k --norsrc --keepParent "$APP_DIR" "$ARCHIVE_PATH"
-(cd "$DIST_DIR" && shasum -a 256 "$ARCHIVE_NAME") > "$CHECKSUM_PATH"
+rm -f "$DMG_PATH" "$DMG_CHECKSUM_PATH"
+rm -rf "$DMG_STAGE_DIR"
+mkdir -p "$DMG_STAGE_DIR"
+cp -R "$APP_DIR" "$DMG_STAGE_DIR/$APP_NAME.app"
+ln -s /Applications "$DMG_STAGE_DIR/Applications"
+hdiutil create \
+  -volname "$APP_NAME $RELEASE_VERSION" \
+  -srcfolder "$DMG_STAGE_DIR" \
+  -ov \
+  -format UDZO \
+  "$DMG_PATH" >/dev/null
+rm -rf "$DMG_STAGE_DIR"
+(cd "$DIST_DIR" && shasum -a 256 "$DMG_NAME") > "$DMG_CHECKSUM_PATH"
 
 if [[ -f "$DEMO_AUDIO_PATH" ]]; then
-  demo_player_args=(
-    "$ROOT_DIR/scripts/build_demo_player.py"
-    --audio "$DEMO_AUDIO_PATH" \
-    --output "$DEMO_PLAYER_PATH"
-  )
-  if [[ -f "$DEMO_TRANSCRIPT_PATH" ]]; then
-    demo_player_args+=(--transcript-json "$DEMO_TRANSCRIPT_PATH")
-  fi
-  python3 "${demo_player_args[@]}"
   (cd "$DIST_DIR" && shasum -a 256 "$(basename "$DEMO_AUDIO_PATH")") > "$DEMO_AUDIO_CHECKSUM_PATH"
-  (cd "$DIST_DIR" && shasum -a 256 "$(basename "$DEMO_PLAYER_PATH")") > "$DEMO_PLAYER_CHECKSUM_PATH"
 fi
 
-echo "$ARCHIVE_PATH"
-echo "$CHECKSUM_PATH"
-if [[ -f "$DEMO_PLAYER_PATH" ]]; then
-  echo "$DEMO_PLAYER_PATH"
-  echo "$DEMO_PLAYER_CHECKSUM_PATH"
+echo "$DMG_PATH"
+echo "$DMG_CHECKSUM_PATH"
+if [[ -f "$DEMO_AUDIO_PATH" ]]; then
+  echo "$DEMO_AUDIO_PATH"
+  echo "$DEMO_AUDIO_CHECKSUM_PATH"
 fi
