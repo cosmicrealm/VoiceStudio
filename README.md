@@ -4,11 +4,9 @@ Voice Studio 是面向 Apple Silicon Mac 的本地语音创作工具，提供精
 
 当前发布版本：`0.01`。
 
-## 下载与示例
+## 下载
 
 - [下载 macOS DMG 安装包](https://github.com/cosmicrealm/VoiceStudio/releases/download/v0.01/Voice-Studio-0.01-macOS-arm64.dmg)
-- [播放 0.01 对话音频示例](https://github.com/cosmicrealm/VoiceStudio/releases/download/v0.01/Voice-Studio-0.01-dialogue-demo.webm)
-- [查看完整 Release](https://github.com/cosmicrealm/VoiceStudio/releases/tag/v0.01)
 
 ## 核心功能
 
@@ -34,7 +32,7 @@ Voice Studio 是面向 Apple Silicon Mac 的本地语音创作工具，提供精
   </thead>
   <tbody>
     <tr>
-      <td width="72%">
+      <td width="64%" valign="top">
         <details>
           <summary>展开查看完整合成文本</summary>
           <pre>旁白: 航行又持续了两个多小时，如果在三维，太空艇已经航行了二十万千米左右。突然间，硬币大小的“魔戒”顶天立地地出现在前方。
@@ -106,8 +104,10 @@ Voice Studio 是面向 Apple Silicon Mac 的本地语音创作工具，提供精
 褚岩: 立刻返回，登上“魔戒”的计划取消了。</pre>
         </details>
       </td>
-      <td width="28%">
-        <a href="https://github.com/cosmicrealm/VoiceStudio/releases/download/v0.01/Voice-Studio-0.01-dialogue-demo.webm">播放音频示例</a>
+      <td width="36%" valign="top">
+        <a href="https://github.com/cosmicrealm/VoiceStudio/releases/download/v0.01/Voice-Studio-0.01-dialogue-demo.mp3">
+          <img alt="播放完整对话音频" src="https://img.shields.io/badge/%E2%96%B6-%E6%92%AD%E6%94%BE%E5%AE%8C%E6%95%B4%E5%AF%B9%E8%AF%9D%E9%9F%B3%E9%A2%91-0969da?style=for-the-badge">
+        </a>
       </td>
     </tr>
   </tbody>
@@ -129,13 +129,7 @@ Voice Studio 是面向 Apple Silicon Mac 的本地语音创作工具，提供精
 
 ## 安装与运行
 
-### 下载发布版
-
-从 Release 页面下载：
-
-[Voice-Studio-0.01-macOS-arm64.dmg](https://github.com/cosmicrealm/VoiceStudio/releases/download/v0.01/Voice-Studio-0.01-macOS-arm64.dmg)
-
-打开 DMG 后，将 `Voice Studio.app` 拖入 `Applications`。首次打开如果 macOS 提示未验证开发者，请在系统安全设置中允许打开。
+首次打开如果 macOS 提示未验证开发者，请在系统安全设置中允许打开。
 
 ### 从源码运行
 

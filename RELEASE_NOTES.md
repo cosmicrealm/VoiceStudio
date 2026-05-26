@@ -42,11 +42,11 @@ Voice-Studio-0.01-macOS-arm64.dmg.sha256
 Release 展示资源：
 
 ```text
-Voice-Studio-0.01-dialogue-demo.webm
-Voice-Studio-0.01-dialogue-demo.webm.sha256
+Voice-Studio-0.01-dialogue-demo.mp3
+Voice-Studio-0.01-dialogue-demo.mp3.sha256
 ```
 
-Release 页面提供可直接播放的 `Voice-Studio-0.01-dialogue-demo.webm`。源码 README 已加入合成文本、可播放音频和 Script Studio 对话生成、VoiceDesign、DeepSeek 对话改写界面预览。
+Release 页面提供 `Voice-Studio-0.01-dialogue-demo.mp3` 对话音频示例。源码 README 已加入合成文本、播放按钮和 Script Studio 对话生成、VoiceDesign、DeepSeek 对话改写界面预览。
 
 打开 DMG 后，将 App 拖入 Applications，再启动：
 
