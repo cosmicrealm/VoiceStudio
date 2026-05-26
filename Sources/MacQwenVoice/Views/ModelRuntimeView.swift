@@ -59,6 +59,7 @@ struct ModelRuntimeView: View {
                 Text(viewModel.runtimeHealth.message)
                     .foregroundStyle(viewModel.runtimeHealth.realInferenceAvailable ? StudioTheme.success : StudioTheme.danger)
                     .textSelection(.enabled)
+                runtimeInstallControls
                 hardwareGrid
                 dependencyGrid
                 optionalDependencyGrid
@@ -90,6 +91,38 @@ struct ModelRuntimeView: View {
             ForEach(viewModel.runtimeHealth.dependencies.sorted(by: { $0.key < $1.key }), id: \.key) { item in
                 Label(item.key, systemImage: item.value ? "checkmark.circle.fill" : "xmark.circle.fill")
                     .foregroundStyle(item.value ? StudioTheme.success : StudioTheme.danger)
+            }
+        }
+    }
+
+    private var runtimeInstallControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !viewModel.runtimeHealth.realInferenceAvailable {
+                Text("首次在新 Mac 上使用时，需要先安装本机运行环境：MLX、mlx-audio、transformers、Hugging Face CLI 和 ffmpeg。安装完成后，模型下载和推理会使用 Voice Studio 的专用 Python 环境。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                HStack {
+                    Button {
+                        viewModel.installRuntimeEnvironment()
+                    } label: {
+                        Label(viewModel.isInstallingRuntime ? "正在安装运行环境" : "安装/修复运行环境", systemImage: "wrench.and.screwdriver")
+                    }
+                    .disabled(viewModel.isInstallingRuntime)
+                    if viewModel.isInstallingRuntime {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
+            }
+            if !viewModel.runtimeInstallLog.isEmpty {
+                DisclosureGroup("运行环境安装日志") {
+                    Text(viewModel.runtimeInstallLog)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .font(.caption)
             }
         }
     }

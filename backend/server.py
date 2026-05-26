@@ -330,9 +330,11 @@ class QwenVoiceBackend:
                     "capability": spec["capability"],
                 }
             )
+        inference_dependencies = ["mlx_audio", "mlx", "transformers"]
         return {
             "runtime": "mlx-audio",
-            "real_inference_available": all(dependencies.values()),
+            "real_inference_available": all(dependencies.get(name) for name in inference_dependencies),
+            "audio_tools_available": dependencies["ffmpeg"],
             "dependencies": dependencies,
             "optional_dependencies": optional_dependencies,
             "hardware": hardware,
@@ -794,12 +796,14 @@ class QwenVoiceBackend:
 
     @staticmethod
     def _runtime_summary(dependencies: dict[str, bool], hardware: dict[str, Any]) -> str:
-        if not dependencies.get("mlx_audio") or not dependencies.get("mlx"):
-            return "MLX runtime unavailable: install mlx-audio and mlx."
+        missing = [name for name in ["mlx_audio", "mlx", "transformers"] if not dependencies.get(name)]
+        if missing:
+            return f"MLX runtime unavailable: install {', '.join(missing)}."
         device = str(hardware.get("mlx_default_device") or "unknown")
         metal = "available" if hardware.get("metal_available") else "unavailable"
         gpu = "GPU" if hardware.get("gpu_available") else "CPU/unknown"
-        return f"mlx-audio on {device} ({gpu}); Metal {metal}."
+        ffmpeg = "available" if dependencies.get("ffmpeg") else "unavailable"
+        return f"mlx-audio on {device} ({gpu}); Metal {metal}; ffmpeg {ffmpeg}."
 
     def _model_local_path(self, spec: dict[str, Any]) -> Path:
         slug = str(spec["repository"]).replace("/", "__")
@@ -1033,6 +1037,11 @@ class QwenVoiceBackend:
 
     @staticmethod
     def _binary_path(name: str) -> str | None:
+        runtime_dir = os.environ.get("VOICE_STUDIO_RUNTIME_DIR", "").strip()
+        if runtime_dir:
+            runtime_binary = Path(runtime_dir) / "bin" / name
+            if runtime_binary.is_file():
+                return str(runtime_binary)
         discovered = shutil.which(name)
         if discovered:
             return discovered

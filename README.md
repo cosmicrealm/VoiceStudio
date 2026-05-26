@@ -155,9 +155,10 @@ scripts/package_release.sh
 ## 首次使用
 
 1. 打开 `Voice Studio.app`。
-2. 进入 `模型` 页面，下载需要的语音模型。
-3. 回到 `Script Studio`，选择精品生成、克隆生成、创造生成或对话生成。
-4. 输入文本、选择音色并生成音频。
+2. 进入 `模型` 页面，点击 `安装/修复运行环境`，安装 MLX、mlx-audio、transformers、Hugging Face CLI 和 ffmpeg。
+3. 在 `模型` 页面下载需要的语音模型。
+4. 回到 `Script Studio`，选择精品生成、克隆生成、创造生成或对话生成。
+5. 输入文本、选择音色并生成音频。
 
 默认工作区位于：
 
@@ -207,10 +208,10 @@ Voice Tools 用于音频整理和合并。支持 `wav`、`mp3`、`m4a`、`aac`�
 
 - Apple Silicon Mac。
 - macOS 14 或更新版本。
-- Python 3.10+。
-- `ffmpeg`。
-- `hf` CLI。
-- 本地语音运行依赖，包括 `mlx`、`mlx_audio`、`transformers`、`numpy`。
+- 网络连接，用于首次安装运行环境和下载模型。
+- Python 3.10+。如果本机没有可用 Python，建议先安装 Homebrew Python。
+- `ffmpeg`。`模型` 页面的一键安装会在 Homebrew 可用时自动安装。
+- 本地语音运行依赖，包括 `mlx`、`mlx_audio`、`transformers`、`numpy`。`模型` 页面的一键安装会把这些依赖装到 Voice Studio 专用 Python 环境。
 
 如需指定 Python 环境，可以在启动前设置：
 

@@ -94,6 +94,7 @@ final class BackendJSONClient {
         process.standardInput = input
         process.standardOutput = output
         process.standardError = error
+        process.environment = VoiceStudioRuntimeEnvironment.mergedEnvironment()
 
         try process.run()
         self.process = process
@@ -135,6 +136,12 @@ final class BackendJSONClient {
            FileManager.default.isExecutableFile(atPath: override) {
             return URL(fileURLWithPath: override)
         }
+        if let bundled = VoiceStudioRuntimeEnvironment.bundledRuntimePythonExecutable {
+            return bundled
+        }
+        if let runtime = VoiceStudioRuntimeEnvironment.runtimePythonExecutable {
+            return runtime
+        }
         if let pathPython = executableFromPath(named: "python3") {
             return pathPython
         }
@@ -150,14 +157,7 @@ final class BackendJSONClient {
     }
 
     private static func executableFromPath(named name: String) -> URL? {
-        let pathValue = ProcessInfo.processInfo.environment["PATH"] ?? ""
-        for directory in pathValue.split(separator: ":") {
-            let candidate = URL(fileURLWithPath: String(directory)).appendingPathComponent(name)
-            if FileManager.default.isExecutableFile(atPath: candidate.path) {
-                return candidate
-            }
-        }
-        return nil
+        VoiceStudioRuntimeEnvironment.executableFromPath(named: name)
     }
 }
 

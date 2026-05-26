@@ -21,12 +21,14 @@ BIN_DIR="$(swift build -c release --show-bin-path)"
 EXECUTABLE="$BIN_DIR/$EXECUTABLE_NAME"
 
 rm -rf "$APP_DIR"
-mkdir -p "$MACOS_DIR" "$RESOURCES_DIR/backend"
+mkdir -p "$MACOS_DIR" "$RESOURCES_DIR/backend" "$RESOURCES_DIR/scripts"
 
 cp "$EXECUTABLE" "$MACOS_DIR/$EXECUTABLE_NAME"
 chmod +x "$MACOS_DIR/$EXECUTABLE_NAME"
 cp backend/server.py "$RESOURCES_DIR/backend/server.py"
 cp backend/__init__.py "$RESOURCES_DIR/backend/__init__.py"
+cp scripts/install_runtime.sh "$RESOURCES_DIR/scripts/install_runtime.sh"
+chmod +x "$RESOURCES_DIR/scripts/install_runtime.sh"
 cp "$ICON_SOURCE" "$RESOURCES_DIR/AppIcon.icns"
 
 cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'

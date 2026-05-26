@@ -125,6 +125,8 @@ final class StudioViewModel: ObservableObject {
         }
     }
     @Published var runtimeHealth: RuntimeHealthViewState = .unknown
+    @Published var isInstallingRuntime: Bool = false
+    @Published var runtimeInstallLog: String = ""
     @Published var cloneReferenceAudioPath: String = ""
     @Published var cloneReferenceText: String = VoiceStudioDefaults.cloneReferenceTranscript
     @Published var clonePurpose: String = "本人声音或已获授权，用于本地旁白生成"
@@ -858,6 +860,34 @@ final class StudioViewModel: ObservableObject {
             }
         } catch {
             statusMessage = "下载启动失败：\(error.localizedDescription)"
+        }
+    }
+
+    func installRuntimeEnvironment() {
+        guard !isInstallingRuntime else { return }
+        guard let scriptURL = VoiceStudioRuntimeEnvironment.installScriptURL else {
+            statusMessage = "未找到运行环境安装脚本"
+            runtimeInstallLog = "未找到 scripts/install_runtime.sh。请重新下载新版 Voice Studio。"
+            return
+        }
+
+        isInstallingRuntime = true
+        runtimeInstallLog = "开始安装运行环境...\n\(scriptURL.path)"
+        statusMessage = "正在安装运行环境"
+
+        Task.detached { [weak self] in
+            let result = Self.runRuntimeInstaller(scriptURL: scriptURL)
+            await MainActor.run {
+                self?.isInstallingRuntime = false
+                self?.runtimeInstallLog = result.output
+                if result.status == 0 {
+                    self?.statusMessage = "运行环境安装完成，正在重新检查"
+                    self?.backend.stop()
+                    self?.refreshRuntimeHealth()
+                } else {
+                    self?.statusMessage = "运行环境安装失败，请查看日志"
+                }
+            }
         }
     }
 
@@ -2084,6 +2114,9 @@ final class StudioViewModel: ObservableObject {
     }
 
     nonisolated private static func audioToolExecutableURL(_ name: String) -> URL? {
+        if let runtimeURL = VoiceStudioRuntimeEnvironment.executableURL(named: name) {
+            return runtimeURL
+        }
         let fixedPaths = [
             "/opt/homebrew/bin/\(name)",
             "/usr/local/bin/\(name)"
@@ -3916,13 +3949,28 @@ final class StudioViewModel: ObservableObject {
 
     nonisolated private static func runHF(arguments: [String], environment processEnvironment: [String: String]) -> (status: Int32, output: String) {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["hf"] + arguments
-        if !processEnvironment.isEmpty {
-            var mergedEnvironment = ProcessInfo.processInfo.environment
-            processEnvironment.forEach { mergedEnvironment[$0.key] = $0.value }
-            process.environment = mergedEnvironment
+        let hfExecutable = VoiceStudioRuntimeEnvironment.executableURL(named: "hf")
+        process.executableURL = hfExecutable ?? URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = hfExecutable == nil ? ["hf"] + arguments : arguments
+        process.environment = VoiceStudioRuntimeEnvironment.mergedEnvironment(extra: processEnvironment)
+        let output = Pipe()
+        process.standardOutput = output
+        process.standardError = output
+        do {
+            try process.run()
+            process.waitUntilExit()
+            let log = String(data: output.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            return (process.terminationStatus, log)
+        } catch {
+            return (-1, error.localizedDescription)
         }
+    }
+
+    nonisolated private static func runRuntimeInstaller(scriptURL: URL) -> (status: Int32, output: String) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/bash")
+        process.arguments = [scriptURL.path]
+        process.environment = VoiceStudioRuntimeEnvironment.mergedEnvironment()
         let output = Pipe()
         process.standardOutput = output
         process.standardError = output
