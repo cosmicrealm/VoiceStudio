@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="158" y1="118" x2="866" y2="906" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2c1c73"/>
+      <stop offset="0.46" stop-color="#131b55"/>
+      <stop offset="1" stop-color="#06152c"/>
+    </linearGradient>
+    <radialGradient id="centerGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(516 506) rotate(90) scale(356 356)">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.44"/>
+      <stop offset="0.28" stop-color="#8b5cff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#0a1430" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wavePurple" x1="210" y1="530" x2="380" y2="530" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6f55ff"/>
+      <stop offset="0.55" stop-color="#b35bff"/>
+      <stop offset="1" stop-color="#f17dff"/>
+    </linearGradient>
+    <linearGradient id="waveBlue" x1="650" y1="530" x2="818" y2="530" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7a5cff"/>
+      <stop offset="0.54" stop-color="#2f92ff"/>
+      <stop offset="1" stop-color="#17e6ef"/>
+    </linearGradient>
+    <linearGradient id="crescent" x1="610" y1="222" x2="834" y2="804" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7157ff"/>
+      <stop offset="0.5" stop-color="#2c7dff"/>
+      <stop offset="1" stop-color="#19e4e8"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="393" y1="342" x2="628" y2="654" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.58" stop-color="#f2f6ff"/>
+      <stop offset="1" stop-color="#bffbff"/>
+    </linearGradient>
+    <filter id="outerShadow" x="-18%" y="-18%" width="136%" height="136%">
+      <feDropShadow dx="0" dy="34" stdDeviation="38" flood-color="#081228" flood-opacity="0.36"/>
+    </filter>
+    <filter id="softGlow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="226" fill="#f6f8fb"/>
+  <rect x="108" y="108" width="808" height="808" rx="190" fill="url(#bg)" filter="url(#outerShadow)"/>
+  <rect x="108" y="108" width="808" height="808" rx="190" fill="url(#centerGlow)"/>
+
+  <path d="M632 245c96 48 162 147 162 261 0 134-91 247-214 281" fill="none" stroke="url(#crescent)" stroke-width="36" stroke-linecap="round" opacity="0.96" filter="url(#softGlow)"/>
+  <path d="M644 300c70 44 116 121 116 209 0 100-60 186-145 224" fill="none" stroke="#0b1533" stroke-width="22" stroke-linecap="round" opacity="0.38"/>
+
+  <g stroke="url(#wavePurple)" stroke-width="26" stroke-linecap="round" filter="url(#softGlow)">
+    <path d="M247 506v52"/>
+    <path d="M296 452v160"/>
+    <path d="M346 403v258"/>
+    <path d="M396 459v146"/>
+  </g>
+
+  <g stroke="url(#waveBlue)" stroke-width="26" stroke-linecap="round" filter="url(#softGlow)">
+    <path d="M628 450v158"/>
+    <path d="M678 395v272"/>
+    <path d="M728 464v132"/>
+    <path d="M778 511v44"/>
+  </g>
+
+  <path d="M512 315c34 108 89 163 197 197-108 34-163 89-197 197-34-108-89-163-197-197 108-34 163-89 197-197Z" fill="url(#spark)" filter="url(#softGlow)"/>
+  <path d="M512 396c20 57 55 92 112 116-57 24-92 59-112 116-20-57-55-92-112-116 57-24 92-59 112-116Z" fill="#ffffff"/>
+
+  <g fill="#ffffff" opacity="0.96">
+    <path d="M243 287c8 28 24 44 52 52-28 8-44 24-52 52-8-28-24-44-52-52 28-8 44-24 52-52Z"/>
+    <path d="M754 306c5 18 16 29 34 34-18 5-29 16-34 34-5-18-16-29-34-34 18-5 29-16 34-34Z"/>
+    <circle cx="819" cy="679" r="13"/>
+    <circle cx="222" cy="675" r="10"/>
+  </g>
+
+  <path d="M160 306c0-81 65-146 146-146h293" fill="none" stroke="#ffffff" stroke-width="20" stroke-linecap="round" opacity="0.16"/>
+  <path d="M393 864h317c82 0 148-66 148-148V431" fill="none" stroke="#020817" stroke-width="18" stroke-linecap="round" opacity="0.22"/>
+</svg>
