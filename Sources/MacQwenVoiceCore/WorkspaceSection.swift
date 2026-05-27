@@ -14,16 +14,21 @@ public enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable {
     public var id: String { rawValue }
 
     public var title: String {
-        switch self {
-        case .scriptStudio: "Script Studio"
-        case .premiumVoices: "精品音色"
-        case .clonedVoices: "克隆音色"
-        case .voiceDesign: "创造音色"
-        case .textRobustness: "文本鲁棒性"
-        case .scriptRewrite: "对话改写"
-        case .voiceTools: "Voice Tools"
-        case .models: "模型"
-        case .settings: "设置"
+        title(language: .simplifiedChinese)
+    }
+
+    public func title(language: AppLanguage) -> String {
+        let localizer = AppLocalizer(language: language)
+        return switch self {
+        case .scriptStudio: localizer.text(.workspaceScriptStudio)
+        case .premiumVoices: localizer.text(.workspacePremiumVoices)
+        case .clonedVoices: localizer.text(.workspaceClonedVoices)
+        case .voiceDesign: localizer.text(.workspaceVoiceDesign)
+        case .textRobustness: localizer.text(.workspaceTextRobustness)
+        case .scriptRewrite: localizer.text(.workspaceScriptRewrite)
+        case .voiceTools: localizer.text(.workspaceVoiceTools)
+        case .models: localizer.text(.workspaceModels)
+        case .settings: localizer.text(.workspaceSettings)
         }
     }
 

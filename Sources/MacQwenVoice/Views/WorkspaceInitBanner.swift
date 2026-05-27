@@ -8,7 +8,7 @@ struct WorkspaceInitBanner: View {
     var body: some View {
         HStack(spacing: 12) {
             StudioPill(
-                title: viewModel.isInitializingWorkspace ? "初始化中" : "Workspace 未初始化",
+                title: viewModel.isInitializingWorkspace ? viewModel.localized(.workspaceInitializing) : viewModel.localized(.workspaceNotInitialized),
                 systemImage: viewModel.isInitializingWorkspace ? "hourglass" : "folder.badge.plus",
                 color: StudioTheme.warning
             )
@@ -21,13 +21,13 @@ struct WorkspaceInitBanner: View {
             Button {
                 viewModel.initializeWorkspaceIfNeeded()
             } label: {
-                Label(viewModel.isInitializingWorkspace ? "正在初始化" : "使用默认 Workspace", systemImage: "checkmark.circle")
+                Label(viewModel.isInitializingWorkspace ? viewModel.localized(.workspaceInitializing) : viewModel.localized(.workspaceUseDefault), systemImage: "checkmark.circle")
             }
             .disabled(viewModel.isInitializingWorkspace)
             Button {
                 NSWorkspace.shared.activateFileViewerSelecting([viewModel.paths.root])
             } label: {
-                Label("打开位置", systemImage: "folder")
+                Label(viewModel.localized(.workspaceOpenLocation), systemImage: "folder")
             }
         }
         .padding(.horizontal, StudioTheme.pagePadding)

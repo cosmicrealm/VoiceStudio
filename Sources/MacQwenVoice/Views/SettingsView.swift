@@ -1,3 +1,4 @@
+import MacQwenVoiceCore
 import SwiftUI
 
 struct SettingsView: View {
@@ -8,10 +9,10 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 StudioPanel {
                     HStack(alignment: .top) {
-                        StudioSectionHeader("设置", subtitle: "集中管理联网大模型、工作流增强和本地配置。")
+                        StudioSectionHeader(viewModel.localized(.settingsTitle), subtitle: viewModel.localized(.settingsSubtitle))
                         Spacer()
                         StudioPill(
-                            title: viewModel.isDeepSeekConfigured ? "DeepSeek 已配置" : "DeepSeek 未配置",
+                            title: viewModel.isDeepSeekConfigured ? viewModel.localized(.settingsDeepSeekConfigured) : viewModel.localized(.settingsDeepSeekUnconfigured),
                             systemImage: viewModel.isDeepSeekConfigured ? "checkmark.circle.fill" : "circle",
                             color: viewModel.isDeepSeekConfigured ? StudioTheme.success : .secondary
                         )
@@ -20,10 +21,28 @@ struct SettingsView: View {
                 StudioPanel {
                     VStack(alignment: .leading, spacing: 12) {
                         StudioSectionHeader(
-                            "联网大模型配置",
-                            subtitle: "DeepSeek API key 用于创造音色增强、对话改写等联网辅助能力；TTS 推理仍然走本地模型。"
+                            viewModel.localized(.settingsInterfaceLanguageTitle),
+                            subtitle: viewModel.localized(.settingsInterfaceLanguageSubtitle)
                         )
-                        DeepSeekConfigurationPanel(subtitle: "API key 只保存到当前 workspace 的本地配置文件；留空保存会清除本地 key。")
+                        Picker(viewModel.localized(.settingsInterfaceLanguageTitle), selection: $viewModel.appLanguage) {
+                            ForEach(AppLanguage.allCases) { language in
+                                Text(language.displayName).tag(language)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        Text(viewModel.localized(.settingsInterfaceLanguageDescription))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                }
+                StudioPanel {
+                    VStack(alignment: .leading, spacing: 12) {
+                        StudioSectionHeader(
+                            viewModel.localized(.settingsOnlineModelConfigTitle),
+                            subtitle: viewModel.localized(.settingsOnlineModelConfigSubtitle)
+                        )
+                        DeepSeekConfigurationPanel(subtitle: viewModel.localized(.settingsDeepSeekConfigSubtitle))
                         Text(viewModel.paths.deepSeekConfig.path)
                             .font(.caption)
                             .foregroundStyle(.secondary)

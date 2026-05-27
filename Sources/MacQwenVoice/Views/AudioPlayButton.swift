@@ -7,7 +7,7 @@ struct AudioPlayButton: View {
     let pauseTitle: String
     let item: AudioPlaybackItem?
 
-    init(_ title: String, pauseTitle: String = "暂停", item: AudioPlaybackItem?) {
+    init(_ title: String, pauseTitle: String = "", item: AudioPlaybackItem?) {
         self.title = title
         self.pauseTitle = pauseTitle
         self.item = item
@@ -30,6 +30,6 @@ struct AudioPlayButton: View {
     }
 
     private var labelTitle: String {
-        isPlaying ? pauseTitle : title
+        isPlaying ? (pauseTitle.isEmpty ? viewModel.localized(.commonPause) : pauseTitle) : title
     }
 }

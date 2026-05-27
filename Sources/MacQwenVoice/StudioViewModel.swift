@@ -94,7 +94,14 @@ final class StudioViewModel: ObservableObject {
     @Published var editedDeliveryStylePrompt: String?
     @Published var editedVoiceIdentityDescription: String?
     @Published var voiceControlProfile: VoiceControlProfile = .defaultNarration
-    @Published var statusMessage: String = "准备就绪"
+    @Published var statusMessage: String = AppLocalizer(language: AppLanguagePreference.load()).text(.statusReady)
+    @Published var appLanguage: AppLanguage = AppLanguagePreference.load() {
+        didSet {
+            let oldLanguage = oldValue
+            AppLanguagePreference.save(appLanguage)
+            applyLocalizedDefaultsIfUntouched(oldLanguage: oldLanguage, newLanguage: appLanguage)
+        }
+    }
     @Published var segments: [TextSegment] = []
     @Published var voices: [VoiceProfile] = []
     @Published var voiceAssets: [VoiceAsset] = []
@@ -128,7 +135,7 @@ final class StudioViewModel: ObservableObject {
     @Published var isInstallingRuntime: Bool = false
     @Published var runtimeInstallLog: String = ""
     @Published var runtimeInstallProgress: Double = 0
-    @Published var runtimeInstallPhase: String = "未开始"
+    @Published var runtimeInstallPhase: String = AppLocalizer(language: AppLanguagePreference.load()).text(.runtimeInstallNotStarted)
     @Published var cloneReferenceAudioPath: String = ""
     @Published var cloneReferenceText: String = VoiceStudioDefaults.cloneReferenceTranscript
     @Published var clonePurpose: String = "本人声音或已获授权，用于本地旁白生成"
@@ -203,11 +210,82 @@ final class StudioViewModel: ObservableObject {
         selectedVoiceSource = VoiceSourceSelection.source(for: voices.first)
         let rawWorkflow = ProcessInfo.processInfo.environment["MACQWENVOICE_INITIAL_WORKFLOW"] ?? ""
         selectedWorkflow = ScriptStudioWorkflow(rawValue: rawWorkflow) ?? .builtin
+        applyLocalizedDefaultsIfUntouched(oldLanguage: .simplifiedChinese, newLanguage: appLanguage)
         initializeBuiltinInstructionIfNeeded()
         isDeepSeekConfigured = DeepSeekVoiceDescriptionRequest.isConfigured(apiKey: try? deepSeekConfigStore.read())
         updateSegments()
-        statusMessage = WorkspaceStartupPolicy.initialStatusMessage
+        statusMessage = localized(.statusReady)
+        runtimeInstallPhase = localized(.runtimeInstallNotStarted)
         initializeWorkspaceIfNeeded()
+    }
+
+    var effectiveAppLanguage: AppLanguage {
+        AppLanguage.resolved(appLanguage)
+    }
+
+    func localized(_ key: AppLocalizationKey) -> String {
+        AppLocalizer(language: appLanguage).text(key)
+    }
+
+    func localized(_ key: AppLocalizationKey, _ argument: String) -> String {
+        String(format: localized(key), argument)
+    }
+
+    private func applyLocalizedDefaultsIfUntouched(oldLanguage: AppLanguage, newLanguage: AppLanguage) {
+        let newDefaults = LocalizedDefaultContent.defaults(for: newLanguage)
+
+        projectTitle = LocalizedDefaultContent.replacingDefault(projectTitle, with: \.projectTitle, language: newLanguage)
+        text = LocalizedDefaultContent.replacingDefault(text, with: \.scriptText, language: newLanguage)
+        cloneReferenceText = LocalizedDefaultContent.replacingDefault(cloneReferenceText, with: \.cloneReferenceTranscript, language: newLanguage)
+        clonePurpose = LocalizedDefaultContent.replacingDefault(clonePurpose, with: \.clonePurpose, language: newLanguage)
+        clonedVoicesPageDraft.cloneName = LocalizedDefaultContent.replacingDefault(clonedVoicesPageDraft.cloneName, with: \.cloneVoiceName, language: newLanguage)
+        scriptRewritePageDraft.stylePrompt = LocalizedDefaultContent.replacingDefault(scriptRewritePageDraft.stylePrompt, with: \.scriptRewriteStylePrompt, language: newLanguage)
+        voiceToolsStatusMessage = LocalizedDefaultContent.replacingDefault(voiceToolsStatusMessage, with: \.voiceToolsStatusMessage, language: newLanguage)
+        voiceToolsPageDraft.outputName = LocalizedDefaultContent.replacingDefault(voiceToolsPageDraft.outputName, with: \.voiceToolsOutputName, language: newLanguage)
+        voiceDesignPageDraft.synthesisText = LocalizedDefaultContent.replacingDefault(voiceDesignPageDraft.synthesisText, with: \.voiceDesignSynthesisText, language: newLanguage)
+        voiceDesignPageDraft.controlInstruction = LocalizedDefaultContent.replacingDefault(voiceDesignPageDraft.controlInstruction, with: \.voiceDesignControlInstruction, language: newLanguage)
+        voiceDesignPageDraft.language = LocalizedDefaultContent.replacingDefault(voiceDesignPageDraft.language, with: \.voiceDesignLanguage, language: newLanguage)
+
+        if !builtinInstructionDraftState.wasEditedByUser {
+            let instruction = VoiceInstructionLibrary.randomInstruction(for: .customVoice, language: newLanguage)
+            let nextInstruction = instruction.isEmpty ? newDefaults.builtinControlInstruction : instruction
+            instruct = nextInstruction
+            builtinInstructionDraftState = VoiceInstructionDraftState(
+                value: nextInstruction,
+                didAutoInitialize: true,
+                wasEditedByUser: false
+            )
+            editedDeliveryStylePrompt = nil
+        } else {
+            instruct = LocalizedDefaultContent.replacingDefault(instruct, with: \.builtinControlInstruction, language: newLanguage)
+        }
+
+        if !voiceDesignInstructionDraftState.wasEditedByUser {
+            let instruction = VoiceInstructionLibrary.randomInstruction(for: .voiceDesign, language: newLanguage)
+            let nextInstruction = instruction.isEmpty ? newDefaults.voiceDesignControlInstruction : instruction
+            voiceIdentityDescription = nextInstruction
+            voiceDesignPageDraft.controlInstruction = nextInstruction
+            voiceDesignInstructionDraftState = VoiceInstructionDraftState(
+                value: nextInstruction,
+                didAutoInitialize: true,
+                wasEditedByUser: false
+            )
+            editedVoiceIdentityDescription = nil
+        } else {
+            voiceIdentityDescription = LocalizedDefaultContent.replacingDefault(voiceIdentityDescription, with: \.voiceDesignControlInstruction, language: newLanguage)
+        }
+
+        if VoiceControlProfile.isLocalizedDefaultNarration(voiceControlProfile) {
+            voiceControlProfile = .defaultNarration(language: newLanguage)
+        }
+
+        if statusMessage == AppLocalizer(language: oldLanguage).text(.statusReady) {
+            statusMessage = localized(.statusReady)
+        }
+        if runtimeInstallPhase == AppLocalizer(language: oldLanguage).text(.runtimeInstallNotStarted) {
+            runtimeInstallPhase = localized(.runtimeInstallNotStarted)
+        }
+        updateSegments()
     }
 
     func initializeWorkspaceIfNeeded() {
@@ -252,7 +330,7 @@ final class StudioViewModel: ObservableObject {
             if migrationAndDatabase.0.didMigrate {
                 statusMessage = "已迁移旧工作区：\(migrationAndDatabase.0.migratedItems.joined(separator: "、"))"
             } else {
-                statusMessage = "准备就绪"
+                statusMessage = localized(.statusReady)
             }
             workspaceReady = true
         } catch {
@@ -574,14 +652,14 @@ final class StudioViewModel: ObservableObject {
                 })
                 let response = try self.backend.oneShot(method: "runtime.health", params: ["model_paths": modelPaths])
                 guard let result = response["result"] as? [String: Any] else {
-                    self.statusMessage = "运行时状态不可识别"
+                    self.statusMessage = self.localized(.statusRuntimeUnknown)
                     return
                 }
                 self.runtimeHealth = RuntimeHealthViewState(payload: result)
                 self.reconcileReadyModelStates(from: self.runtimeHealth.modelStatuses)
             } catch {
                 self.runtimeHealth = .unavailable(message: error.localizedDescription)
-                self.statusMessage = "运行时检查失败：\(error.localizedDescription)"
+                self.statusMessage = self.localized(.statusRuntimeCheckFailedFormat, error.localizedDescription)
             }
         }
     }
@@ -867,16 +945,16 @@ final class StudioViewModel: ObservableObject {
     func installRuntimeEnvironment() {
         guard !isInstallingRuntime else { return }
         guard let scriptURL = VoiceStudioRuntimeEnvironment.installScriptURL else {
-            statusMessage = "未找到运行环境安装脚本"
-            runtimeInstallLog = "未找到 scripts/install_runtime.sh。请重新下载新版 Voice Studio。"
+            statusMessage = localized(.runtimeInstallMissingScriptStatus)
+            runtimeInstallLog = localized(.runtimeInstallMissingScriptLog)
             return
         }
 
         isInstallingRuntime = true
         runtimeInstallProgress = 0.02
-        runtimeInstallPhase = "准备安装"
+        runtimeInstallPhase = localized(.runtimeInstallPreparing)
         runtimeInstallLog = "开始安装运行环境...\n\(scriptURL.path)\n"
-        statusMessage = "正在安装运行环境"
+        statusMessage = localized(.runtimeInstallInstalling)
 
         Task.detached { [weak self] in
             let result = await Self.runRuntimeInstaller(scriptURL: scriptURL) { chunk in
@@ -892,13 +970,13 @@ final class StudioViewModel: ObservableObject {
                 }
                 if result.status == 0 {
                     self.runtimeInstallProgress = 1
-                    self.runtimeInstallPhase = "安装完成"
-                    self.statusMessage = "运行环境安装完成，正在重新检查"
+                    self.runtimeInstallPhase = self.localized(.runtimeInstallCompleted)
+                    self.statusMessage = self.localized(.runtimeInstallCompleted)
                     self.backend.stop()
                     self.refreshRuntimeHealth()
                 } else {
-                    self.runtimeInstallPhase = "安装失败"
-                    self.statusMessage = "运行环境安装失败，请查看日志"
+                    self.runtimeInstallPhase = self.localized(.runtimeInstallFailed)
+                    self.statusMessage = self.localized(.runtimeInstallFailed)
                 }
             }
         }
@@ -941,7 +1019,7 @@ final class StudioViewModel: ObservableObject {
     }
 
     func initializeBuiltinInstructionIfNeeded() {
-        guard let template = VoiceInstructionLibrary.randomTemplate(for: .customVoice) else { return }
+        guard let template = VoiceInstructionLibrary.randomTemplate(for: .customVoice, language: appLanguage) else { return }
         if builtinInstructionDraftState.initializeIfNeeded(with: template) {
             instruct = builtinInstructionDraftState.value
         } else if builtinInstructionDraftState.wasEditedByUser {
@@ -953,14 +1031,16 @@ final class StudioViewModel: ObservableObject {
     }
 
     func initializeVoiceDesignInstructionIfNeeded() {
-        let template = VoiceInstructionTemplate(
-            id: "default-voice-design-control",
-            title: "默认创造生成",
-            workflow: .voiceDesign,
-            instruction: VoiceStudioDefaults.defaultVoiceDesignControlInstruction
-        )
+        let template = VoiceInstructionLibrary.randomTemplate(for: .voiceDesign, language: appLanguage)
+            ?? VoiceInstructionTemplate(
+                id: "default-voice-design-control",
+                title: "VoiceDesign",
+                workflow: .voiceDesign,
+                instruction: LocalizedDefaultContent.defaults(for: appLanguage).voiceDesignControlInstruction
+            )
         if voiceDesignInstructionDraftState.initializeIfNeeded(with: template) {
             voiceIdentityDescription = voiceDesignInstructionDraftState.value
+            voiceDesignPageDraft.controlInstruction = voiceDesignInstructionDraftState.value
         } else if voiceDesignInstructionDraftState.wasEditedByUser {
             voiceIdentityDescription = voiceDesignInstructionDraftState.value
         }
@@ -1088,7 +1168,7 @@ final class StudioViewModel: ObservableObject {
     }
 
     func fillCloneTranscriptExample() {
-        cloneReferenceText = VoiceStudioDefaults.cloneReferenceTranscript
+        cloneReferenceText = LocalizedDefaultContent.defaults(for: appLanguage).cloneReferenceTranscript
         statusMessage = "已填入录音示例句；录制参考音频时请读出同一句话"
     }
 
@@ -1368,17 +1448,20 @@ final class StudioViewModel: ObservableObject {
         switch selectedWorkflow {
         case .voiceDesign:
             editedVoiceIdentityDescription = nil
-            voiceIdentityDescription = VoiceStudioDefaults.defaultVoiceDesignControlInstruction
+            let defaultInstruction = LocalizedDefaultContent.defaults(for: appLanguage).voiceDesignControlInstruction
+            voiceIdentityDescription = defaultInstruction
+            voiceDesignPageDraft.controlInstruction = defaultInstruction
             voiceDesignInstructionDraftState = VoiceInstructionDraftState(
-                value: VoiceStudioDefaults.defaultVoiceDesignControlInstruction,
+                value: defaultInstruction,
                 didAutoInitialize: true,
                 wasEditedByUser: false
             )
         case .builtin:
             editedDeliveryStylePrompt = nil
-            instruct = VoiceStudioDefaults.defaultBuiltinControlInstruction
+            let defaultInstruction = LocalizedDefaultContent.defaults(for: appLanguage).builtinControlInstruction
+            instruct = defaultInstruction
             builtinInstructionDraftState = VoiceInstructionDraftState(
-                value: VoiceStudioDefaults.defaultBuiltinControlInstruction,
+                value: defaultInstruction,
                 didAutoInitialize: true,
                 wasEditedByUser: false
             )
@@ -2775,8 +2858,17 @@ final class StudioViewModel: ObservableObject {
     }
 
     func prepareCloneTestScript() {
-        text = "这是一段用于测试克隆音色的短句，请确认它是否保持了参考音频里的音色、语气和清晰度。"
-        instruct = "保持参考音色，自然清晰"
+        switch effectiveAppLanguage {
+        case .simplifiedChinese:
+            text = "这是一段用于测试克隆音色的短句，请确认它是否保持了参考音频里的音色、语气和清晰度。"
+            instruct = "保持参考音色，自然清晰"
+        case .traditionalChinese:
+            text = "這是一段用於測試克隆音色的短句，請確認它是否保持了參考音訊裡的音色、語氣和清晰度。"
+            instruct = "保持參考音色，自然清晰"
+        default:
+            text = "This is a short sentence for testing the cloned voice. Please check whether it keeps the timbre, tone, and clarity of the reference audio."
+            instruct = "Keep the reference timbre, natural and clear"
+        }
         updateSegments()
         statusMessage = "已载入克隆测试句，可直接生成试听"
     }

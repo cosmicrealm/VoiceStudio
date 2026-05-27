@@ -5,6 +5,10 @@ struct ScriptStudioView: View {
     @EnvironmentObject private var viewModel: StudioViewModel
     let onOpenVoiceDesign: () -> Void
 
+    private var interfaceLanguage: AppLanguage { viewModel.effectiveAppLanguage }
+    private func t(_ key: AppLocalizationKey) -> String { viewModel.localized(key) }
+    private func t(_ key: AppLocalizationKey, _ argument: String) -> String { viewModel.localized(key, argument) }
+
     var body: some View {
         VStack(spacing: 0) {
             topControlBar
@@ -38,41 +42,42 @@ struct ScriptStudioView: View {
     }
 
     private var topControlBar: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                Picker("工作流", selection: workflowSelection) {
-                    ForEach(ScriptStudioWorkflow.allCases) { workflow in
-                        Text(workflow.title).tag(workflow)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 380)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                workflowTabs
+                    .layoutPriority(1)
 
-                if viewModel.selectedWorkflow == .voiceDesign {
-                    StudioPill(title: "VoiceDesign 创造生成", systemImage: "sparkles", color: .purple)
-                } else if viewModel.selectedWorkflow == .multiRole {
-                    StudioPill(title: "角色音色 + Base", systemImage: "person.3.sequence", color: StudioTheme.success)
-                } else {
-                    voicePicker
-                }
+                Spacer(minLength: 12)
 
-                Spacer(minLength: 8)
                 RuntimeStatusPill()
+                    .layoutPriority(2)
             }
 
-            HStack(spacing: 12) {
-                Picker("生成模型", selection: scriptStudioModelSelection) {
-                    ForEach(viewModel.scriptStudioWorkflowModels) { model in
-                        Text(viewModel.scriptStudioModelDisplayName(for: model)).tag(model.id)
-                    }
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: 12) {
+                    workflowRouteControl
+                    generationModelPicker
+                    Text(modelRouteText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(1)
+                    Spacer(minLength: 8)
                 }
-                .frame(maxWidth: 460)
 
-                Text(modelRouteText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                Spacer()
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .center, spacing: 12) {
+                        workflowRouteControl
+                        generationModelPicker
+                        Spacer(minLength: 8)
+                    }
+                    Text(modelRouteText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .padding(.horizontal, StudioTheme.pagePadding)
@@ -80,34 +85,114 @@ struct ScriptStudioView: View {
         .background(StudioTheme.panelBackground)
     }
 
+    private var workflowTabs: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(ScriptStudioWorkflow.allCases) { workflow in
+                    workflowTabButton(workflow)
+                }
+            }
+            .padding(2)
+        }
+        .accessibilityLabel(t(.scriptWorkflow))
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func workflowTabButton(_ workflow: ScriptStudioWorkflow) -> some View {
+        let isSelected = viewModel.selectedWorkflow == workflow
+        return Button {
+            viewModel.selectScriptStudioWorkflow(workflow)
+        } label: {
+            Text(workflow.title(language: interfaceLanguage))
+                .font(.callout.weight(isSelected ? .semibold : .regular))
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .frame(minWidth: workflowTabMinimumWidth(for: workflow), minHeight: 34)
+                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(isSelected ? Color.white : Color.primary)
+        .background(isSelected ? Color.accentColor : StudioTheme.subtleFill)
+        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+    }
+
+    private func workflowTabMinimumWidth(for workflow: ScriptStudioWorkflow) -> CGFloat {
+        switch interfaceLanguage {
+        case .simplifiedChinese, .traditionalChinese, .japanese, .korean:
+            return 116
+        case .english:
+            return workflow == .multiRole ? 180 : 154
+        case .russian:
+            return workflow == .multiRole ? 230 : 190
+        case .spanish, .portuguese, .french, .german, .italian:
+            return workflow == .multiRole ? 220 : 176
+        case .system:
+            return 154
+        }
+    }
+
+    @ViewBuilder
+    private var workflowRouteControl: some View {
+        if viewModel.selectedWorkflow == .voiceDesign {
+            StudioPill(title: viewModel.selectedWorkflow.title(language: interfaceLanguage), systemImage: "sparkles", color: .purple)
+                .frame(minWidth: 220, maxWidth: 320, alignment: .leading)
+        } else if viewModel.selectedWorkflow == .multiRole {
+            StudioPill(title: t(.scriptRoleVoiceRoute), systemImage: "person.3.sequence", color: StudioTheme.success)
+                .frame(minWidth: 220, maxWidth: 320, alignment: .leading)
+        } else {
+            voicePicker
+        }
+    }
+
+    private var generationModelPicker: some View {
+        HStack(spacing: 8) {
+            Text(t(.scriptGenerationModel))
+                .font(.callout)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(minWidth: 110, idealWidth: 150, maxWidth: 190, alignment: .trailing)
+
+            Picker("", selection: scriptStudioModelSelection) {
+                ForEach(viewModel.scriptStudioWorkflowModels) { model in
+                    Text(viewModel.scriptStudioModelDisplayName(for: model)).tag(model.id)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 360)
+        }
+        .frame(maxWidth: 560, alignment: .leading)
+    }
+
     @ViewBuilder
     private var voicePicker: some View {
         if viewModel.selectedWorkflow == .builtin {
-            Picker("音色", selection: builtinVoiceSelection) {
+            Picker(t(.scriptVoice), selection: builtinVoiceSelection) {
                 ForEach(viewModel.builtinVoices) { voice in
                     Text(BuiltinVoiceDisplayName.displayNameWithNativeLanguage(for: voice)).tag(Optional(voice.id))
                 }
             }
-            .frame(width: 260)
+            .frame(width: 300)
         } else {
-            Picker("音色", selection: customVoiceSelection) {
-                Text(viewModel.customVoices.isEmpty ? "暂无可复用音色" : "选择可复用音色").tag(Optional<String>.none)
+            Picker(t(.scriptVoice), selection: customVoiceSelection) {
+                Text(viewModel.customVoices.isEmpty ? t(.scriptNoReusableVoice) : t(.scriptSelectReusableVoice)).tag(Optional<String>.none)
                 if !viewModel.clonedCustomVoices.isEmpty {
-                    Section("录制/导入克隆音色") {
+                    Section(t(.scriptRecordedClonedVoices)) {
                         ForEach(viewModel.clonedCustomVoices) { voice in
                             Text(voice.name).tag(Optional(voice.id))
                         }
                     }
                 }
                 if !viewModel.designedCustomVoices.isEmpty {
-                    Section("VoiceDesign 创造音色") {
+                    Section(t(.scriptDesignedVoices)) {
                         ForEach(viewModel.designedCustomVoices) { voice in
                             Text(voice.name).tag(Optional(voice.id))
                         }
                     }
                 }
             }
-            .frame(width: 260)
+            .frame(width: 300)
         }
     }
 
@@ -117,14 +202,17 @@ struct ScriptStudioView: View {
                 StudioPanel {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            StudioSectionHeader("模型输入", subtitle: modelInputSubtitle)
+                            StudioSectionHeader(t(.scriptModelInputTitle), subtitle: modelInputSubtitle)
                             Spacer()
                             Button {
                                 viewModel.toggleTextDictation()
                             } label: {
-                                Label(viewModel.isDictatingText ? "停止语音输入" : "语音输入", systemImage: viewModel.isDictatingText ? "stop.circle" : "mic.circle")
+                                Label(
+                                    viewModel.isDictatingText ? t(.scriptStopVoiceInput) : t(.scriptVoiceInput),
+                                    systemImage: viewModel.isDictatingText ? "stop.circle" : "mic.circle"
+                                )
                             }
-                            .help("调用 macOS 系统语音识别，把麦克风输入写入待生成文字。")
+                            .help(t(.scriptVoiceInputHelp))
                         }
                         modelInputFields
                         if viewModel.selectedWorkflow == .multiRole {
@@ -173,7 +261,7 @@ struct ScriptStudioView: View {
                 referenceInput(preview)
             }
             if !preview.missingRequirements.isEmpty {
-                Label("缺失：\(preview.missingRequirements.joined(separator: "、"))", systemImage: "exclamationmark.triangle.fill")
+                Label(t(.scriptMissingFormat, preview.missingRequirements.joined(separator: ", ")), systemImage: "exclamationmark.triangle.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(StudioTheme.warning)
             }
@@ -183,13 +271,13 @@ struct ScriptStudioView: View {
     private var voiceControlDisclosure: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                StudioSectionHeader("声音控制", subtitle: "选择或编辑控制属性后，点击应用到指令控制。")
+                StudioSectionHeader(t(.scriptVoiceControlTitle), subtitle: t(.scriptVoiceControlSubtitle))
                 Spacer()
                 Button {
                     viewModel.scriptStudioPageDraft.isVoiceControlExpanded.toggle()
                 } label: {
                     Label(
-                        viewModel.scriptStudioPageDraft.isVoiceControlExpanded ? "收起" : "展开",
+                        viewModel.scriptStudioPageDraft.isVoiceControlExpanded ? t(.scriptCollapse) : t(.scriptExpand),
                         systemImage: viewModel.scriptStudioPageDraft.isVoiceControlExpanded ? "chevron.up" : "slider.horizontal.3"
                     )
                 }
@@ -220,7 +308,7 @@ struct ScriptStudioView: View {
                             .toggled(option)
                             .constrained(to: viewModel.selectedWorkflow)
                     } label: {
-                        Text(option.displayTitle)
+                        Text(option.displayTitle(language: interfaceLanguage))
                             .font(.caption.weight(.semibold))
                     }
                     .buttonStyle(.bordered)
@@ -228,7 +316,7 @@ struct ScriptStudioView: View {
                     .tint(viewModel.scriptStudioLanguageChoice.contains(option) ? Color.accentColor : .secondary)
                 }
             }
-            Text(preview.languageChoice.requestHint(for: preview.text))
+            Text(preview.languageChoice.requestHint(for: preview.text, language: interfaceLanguage))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -240,11 +328,11 @@ struct ScriptStudioView: View {
 
     private var synthesisTextEditor: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(viewModel.generationInputPreview.synthesisTitle)
+            Text(t(.scriptSynthesisText))
                 .font(.headline)
             Text(viewModel.selectedWorkflow == .multiRole
-                 ? "用“角色名: 台词”写对话；生成时会去掉角色标签，按绑定音色逐句 Base 合成并合并为完整 WebM。"
-                 : "内部会拆成 \(viewModel.segments.count) 个生成段；生成全文后会合并为完整 WebM")
+                 ? t(.scriptMultiRoleSynthesisHint)
+                 : t(.scriptDefaultSynthesisHintFormat, "\(viewModel.segments.count)"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             PlainTextEditor(text: $viewModel.text) {
@@ -266,7 +354,7 @@ struct ScriptStudioView: View {
             HStack(alignment: .center, spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
-                        Text("已绑定参考音频")
+                        Text(t(.scriptBoundReferenceAudio))
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
                         StudioPill(title: viewModel.selectedVoiceChainLabel, systemImage: referenceSourceIcon, color: referenceSourceColor)
@@ -283,7 +371,7 @@ struct ScriptStudioView: View {
                 }
                 Spacer()
                 AudioPlayButton(
-                    "试听",
+                    t(.commonPreview),
                     item: preview.refAudioPath.map { AudioPlaybackItem.file(path: $0, context: "script-reference") }
                 )
                 .controlSize(.small)
@@ -292,17 +380,17 @@ struct ScriptStudioView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text("参考逐字稿")
+                    Text(t(.scriptReferenceTranscript))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Spacer()
                 }
-                Text(preview.refText ?? "缺失")
+                Text(preview.refText ?? t(.commonMissing))
                     .font(.caption)
                     .lineLimit(4)
                     .foregroundStyle(preview.refText == nil ? StudioTheme.warning : .primary)
                     .textSelection(.enabled)
-                Text("Base 复用固定使用保存音色时绑定的 reference transcript，避免参考音频和逐字稿错配。")
+                Text(t(.scriptReferenceTranscriptNote))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -321,16 +409,16 @@ struct ScriptStudioView: View {
     }
 
     private func referenceAudioName(_ path: String?) -> String {
-        guard let path, !path.isEmpty else { return "缺失" }
+        guard let path, !path.isEmpty else { return t(.commonMissing) }
         return URL(fileURLWithPath: path).lastPathComponent
     }
 
     private var multiRolePreparationPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                StudioSectionHeader("角色音色绑定", subtitle: "每个角色必须绑定一个已保存的克隆音色或创造音色；Base 逐句复用 ref_audio/ref_text。")
+                StudioSectionHeader(t(.scriptRoleVoiceBindingTitle), subtitle: t(.scriptRoleVoiceBindingSubtitle))
                 Spacer()
-                Text("角色音色 + Base")
+                Text(t(.scriptRoleVoiceRoute))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
@@ -339,7 +427,7 @@ struct ScriptStudioView: View {
 
             if viewModel.multiRoleVoicePreparationItems.isEmpty {
                 HStack(spacing: 10) {
-                    Label("在合成文本里写“角色名: 台词”。系统会解析角色列表；每个角色都需要在这里绑定已保存音色。", systemImage: "person.3")
+                    Label(t(.scriptRoleVoiceEmptyHint), systemImage: "person.3")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -369,7 +457,7 @@ struct ScriptStudioView: View {
                         Image(systemName: viewModel.scriptStudioPageDraft.isMultiRoleDesignedVoicePoolExpanded ? "chevron.down" : "chevron.right")
                             .font(.caption.weight(.semibold))
                             .frame(width: 12)
-                        Text("创造音色池")
+                        Text(t(.scriptDesignedVoicePool))
                             .font(.caption.weight(.semibold))
                         StudioPill(
                             title: VoiceSelectionSummary.countLabel(
@@ -389,7 +477,7 @@ struct ScriptStudioView: View {
 
                 Spacer()
                 if !viewModel.multiRoleSelectedDesignedVoiceIDs.isEmpty {
-                    Button("清空") {
+                    Button(t(.commonClearSelection)) {
                         viewModel.clearDesignedVoicesForMultiRole()
                     }
                     .controlSize(.small)
@@ -398,7 +486,7 @@ struct ScriptStudioView: View {
 
             if viewModel.scriptStudioPageDraft.isMultiRoleDesignedVoicePoolExpanded {
                 if viewModel.designedCustomVoices.isEmpty {
-                    Text("暂无创造音色。先在左侧“创造音色”保存角色声音，再回到这里选择使用。")
+                    Text(t(.scriptNoDesignedVoiceHint))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -433,16 +521,16 @@ struct ScriptStudioView: View {
             }
             .toggleStyle(.checkbox)
 
-            Text((voice.referenceText ?? "缺少 ref_text").trimmingCharacters(in: .whitespacesAndNewlines))
+            Text((voice.referenceText ?? t(.scriptMissingRefText)).trimmingCharacters(in: .whitespacesAndNewlines))
                 .font(.caption2)
                 .foregroundStyle(voice.referenceText == nil ? StudioTheme.warning : .secondary)
                 .lineLimit(2)
 
             HStack(spacing: 6) {
-                StudioPill(title: "创造音色", systemImage: "sparkles", color: .purple)
+                StudioPill(title: t(.workspaceVoiceDesign), systemImage: "sparkles", color: .purple)
                 Spacer()
                 AudioPlayButton(
-                    "试听",
+                    t(.commonPreview),
                     item: voice.referenceAudioPath.map { AudioPlaybackItem.file(path: $0, context: "multi-role-designed-\(voice.id)") }
                 )
                 .labelStyle(.iconOnly)
@@ -457,14 +545,14 @@ struct ScriptStudioView: View {
 
     private func multiRolePreparationRow(_ item: MultiRoleVoicePreparationItem) -> some View {
         return HStack(alignment: .top, spacing: 10) {
-            StudioPill(title: item.status.title, systemImage: multiRoleStatusIcon(item.status), color: multiRoleStatusColor(item.status))
+            StudioPill(title: multiRoleStatusTitle(item.status), systemImage: multiRoleStatusIcon(item.status), color: multiRoleStatusColor(item.status))
                 .frame(width: 86, alignment: .leading)
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.roleName)
                     .font(.caption.weight(.semibold))
                 HStack(spacing: 6) {
-                    StudioPill(title: item.sourceKind.title, systemImage: multiRoleSourceIcon(item.sourceKind), color: multiRoleSourceColor(item.sourceKind))
-                    Text(item.boundVoiceName ?? "未绑定音色")
+                    StudioPill(title: multiRoleSourceTitle(item.sourceKind), systemImage: multiRoleSourceIcon(item.sourceKind), color: multiRoleSourceColor(item.sourceKind))
+                    Text(item.boundVoiceName ?? t(.scriptUnboundVoice))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -473,35 +561,35 @@ struct ScriptStudioView: View {
                     .font(.caption)
                     .lineLimit(2)
                     .foregroundStyle(.secondary)
-                Text("ref_text：\(item.boundReferenceText ?? item.referenceText)")
+                Text(t(.scriptRefTextFormat, item.boundReferenceText ?? item.referenceText))
                     .font(.caption2)
                     .lineLimit(2)
                     .foregroundStyle(.secondary)
                 if !item.missingRequirements.isEmpty {
-                    Text("缺少：\(item.missingRequirements.joined(separator: "、"))")
+                    Text(t(.scriptMissingFormat, item.missingRequirements.joined(separator: ", ")))
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(StudioTheme.warning)
                 }
             }
             Spacer()
-            Picker("绑定音色", selection: multiRoleVoiceSelection(for: item.roleName)) {
-                Text("未绑定").tag(Optional<String>.none)
+            Picker(t(.scriptBindVoice), selection: multiRoleVoiceSelection(for: item.roleName)) {
+                Text(t(.scriptUnbound)).tag(Optional<String>.none)
                 if !viewModel.multiRoleSelectedDesignedVoices.isEmpty {
-                    Section("已选创造音色") {
+                    Section(t(.scriptSelectedDesignedVoices)) {
                         ForEach(viewModel.multiRoleSelectedDesignedVoices) { voice in
                             Text(voice.name).tag(Optional(voice.id))
                         }
                     }
                 }
                 if !viewModel.clonedCustomVoices.isEmpty {
-                    Section("克隆音色") {
+                    Section(t(.workspaceClonedVoices)) {
                         ForEach(viewModel.clonedCustomVoices) { voice in
                             Text(voice.name).tag(Optional(voice.id))
                         }
                     }
                 }
                 if !viewModel.multiRoleUnselectedDesignedVoices.isEmpty {
-                    Section("其他创造音色") {
+                    Section(t(.scriptOtherDesignedVoices)) {
                         ForEach(viewModel.multiRoleUnselectedDesignedVoices) { voice in
                             Text(voice.name).tag(Optional(voice.id))
                         }
@@ -511,7 +599,7 @@ struct ScriptStudioView: View {
             .labelsHidden()
             .frame(width: 190)
             AudioPlayButton(
-                "试听",
+                t(.commonPreview),
                 item: item.referenceAudioPath.map { AudioPlaybackItem.file(path: $0, context: "multi-role-\(item.id)") }
             )
             .controlSize(.small)
@@ -532,6 +620,30 @@ struct ScriptStudioView: View {
             "checkmark.circle.fill"
         case .failed:
             "xmark.circle.fill"
+        }
+    }
+
+    private func multiRoleStatusTitle(_ status: MultiRoleVoicePreparationStatus) -> String {
+        switch status {
+        case .missing:
+            return t(.scriptUnbound)
+        case .generating:
+            return t(.generationRunningTitle)
+        case .ready:
+            return t(.modelReady)
+        case .failed:
+            return t(.runtimeInstallFailed)
+        }
+    }
+
+    private func multiRoleSourceTitle(_ source: MultiRoleVoiceSourceKind) -> String {
+        switch source {
+        case .unbound:
+            return t(.scriptUnbound)
+        case .clonedVoice:
+            return t(.workspaceClonedVoices)
+        case .voiceDesign, .generatedFromPrompt:
+            return t(.workspaceVoiceDesign)
         }
     }
 
@@ -593,11 +705,11 @@ struct ScriptStudioView: View {
     }
 
     private var generationPromptTitle: String {
-        return "指令控制"
+        return t(.scriptGenerationControlTitle)
     }
 
     private var generationPromptPlaceholder: String {
-        return "未设置控制指令；将使用所选音色的默认风格。"
+        return t(.scriptGenerationControlPlaceholder)
     }
 
     private func generationPromptEditor(title: String, placeholder: String) -> some View {
@@ -605,7 +717,7 @@ struct ScriptStudioView: View {
         return VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.headline)
-            Text(preview.disabledInstructReason ?? "最终送入模型的控制指令")
+            Text(preview.disabledInstructReason ?? t(.scriptFinalControlInstruction))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack(spacing: 8) {
@@ -613,14 +725,14 @@ struct ScriptStudioView: View {
                 Button {
                     viewModel.randomizeGenerationControlInstruction()
                 } label: {
-                    Label("随机生成", systemImage: "shuffle")
+                    Label(t(.scriptRandomGenerate), systemImage: "shuffle")
                 }
                 .controlSize(.small)
                 .disabled(!preview.showsInstructionEditor)
                 Button {
                     viewModel.resetGenerationControlInstructionToCompiled()
                 } label: {
-                    Label("恢复默认指令", systemImage: "arrow.counterclockwise")
+                    Label(t(.scriptRestoreDefaultInstruction), systemImage: "arrow.counterclockwise")
                 }
                 .controlSize(.small)
                 .disabled(!preview.showsInstructionEditor)
@@ -655,9 +767,9 @@ struct ScriptStudioView: View {
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 18)
             VStack(alignment: .leading, spacing: 4) {
-                Text("克隆生成不使用指令控制")
+                Text(t(.scriptCloneNoInstructionTitle))
                     .font(.headline)
-                Text("音色来自 RefAudio 和 RefText；生成时会复用所选音色绑定的参考音频和参考逐字稿，不再额外传入控制指令。")
+                Text(t(.scriptCloneNoInstructionSubtitle))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -679,7 +791,7 @@ struct ScriptStudioView: View {
         StudioPanel {
             HStack(spacing: 10) {
                 StudioToolbarButton(
-                    title: viewModel.isGeneratingAllSegments ? "取消队列" : "生成全文",
+                    title: viewModel.isGeneratingAllSegments ? t(.scriptCancelQueue) : t(.scriptGenerateFullText),
                     systemImage: viewModel.isGeneratingAllSegments ? "stop.circle" : "waveform",
                     prominent: !viewModel.isGeneratingAllSegments
                 ) {
@@ -691,20 +803,20 @@ struct ScriptStudioView: View {
                 }
                 .disabled(!viewModel.isGeneratingAllSegments && !viewModel.currentModelInputPreview.missingRequirements.isEmpty)
                 StudioToolbarButton(
-                    title: viewModel.playAllControlState.title,
+                    title: viewModel.playAllControlState.title(language: interfaceLanguage),
                     systemImage: viewModel.playAllControlState.systemImage
                 ) {
                     viewModel.togglePlayAllGenerated()
                 }
                 StudioToolbarButton(
-                    title: viewModel.isMergingFullGeneratedAudio ? "合成中" : "导出全文",
+                    title: viewModel.isMergingFullGeneratedAudio ? t(.scriptMerging) : t(.scriptExportFullText),
                     systemImage: "square.and.arrow.up"
                 ) {
                     viewModel.exportAllGenerated()
                 }
                 .disabled(!viewModel.canExportFullGeneratedAudio)
                 if viewModel.hasMergedFullGeneratedAudio {
-                    StudioPill(title: "已合并完整 WebM", systemImage: "waveform.path", color: StudioTheme.success)
+                    StudioPill(title: t(.scriptMergedFullWebM), systemImage: "waveform.path", color: StudioTheme.success)
                 }
                 if viewModel.hasPlayableGeneratedAudio {
                     Text(viewModel.generatedPlaybackDurationLabel)
@@ -722,40 +834,39 @@ struct ScriptStudioView: View {
     }
 
     private var modelInputSubtitle: String {
-        let preview = viewModel.currentModelInputPreview
         if viewModel.hasRoleRoutedScript {
             return viewModel.selectedWorkflow == .multiRole
-                ? "对话生成：只使用已绑定角色音色，Base 逐句合成后合并为完整 WebM。"
-                : "检测到多角色脚本：请切换到“对话生成”以避免角色声线漂移。"
+                ? t(.scriptModelInputSubtitleMultiRole)
+                : t(.scriptModelInputSubtitleRoleWarning)
         }
         switch viewModel.selectedWorkflow {
         case .builtin:
-            return "CustomVoice：确认 language，编辑指令控制，音色由上方选择。"
+            return t(.scriptModelInputSubtitleBuiltin)
         case .custom:
-            return preview.disabledInstructReason ?? "Base Clone：确认 language，并使用可复用音色绑定的参考组。"
+            return t(.scriptModelInputSubtitleCustom)
         case .voiceDesign:
-            return "VoiceDesign：确认 language，编辑声音设计指令。"
+            return t(.scriptModelInputSubtitleVoiceDesign)
         case .multiRole:
-            return "对话生成：在合成文本里写角色台词，并为每个角色绑定已保存音色。"
+            return t(.scriptModelInputSubtitleMultiRole)
         }
     }
 
     private var modelRouteText: String {
         if viewModel.selectedWorkflow == .multiRole {
-            return "对话生成：角色音色 + Base 逐句复用并合并"
+            return t(.scriptRouteMultiRole)
         }
         if viewModel.hasRoleRoutedScript {
-            return "检测到角色脚本：请切换到对话生成"
+            return t(.scriptRouteRoleWarning)
         }
         switch viewModel.selectedWorkflow {
         case .builtin:
-            return "CustomVoice：精品 speaker 与风格控制"
+            return t(.scriptRouteBuiltin)
         case .custom:
-            return "Base Clone：复用克隆音色或创造音色"
+            return t(.scriptRouteCustom)
         case .voiceDesign:
-            return "VoiceDesign：用自然语言描述直接创造声音"
+            return t(.scriptRouteVoiceDesign)
         case .multiRole:
-            return "对话生成：角色音色 + Base"
+            return t(.scriptRoleVoiceRoute)
         }
     }
 
@@ -810,20 +921,24 @@ struct ScriptStudioView: View {
 struct VoiceControlPanel: View {
     @EnvironmentObject private var viewModel: StudioViewModel
 
+    private var interfaceLanguage: AppLanguage { viewModel.effectiveAppLanguage }
+    private func t(_ key: AppLocalizationKey) -> String { viewModel.localized(key) }
+    private func t(_ key: AppLocalizationKey, _ argument: String) -> String { viewModel.localized(key, argument) }
+
     private var definitions: [VoiceControlAttributeDefinition] {
-        VoiceControlAttributeCatalog.definitions(for: viewModel.selectedWorkflow)
+        VoiceControlAttributeCatalog.definitions(for: viewModel.selectedWorkflow, language: interfaceLanguage)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center) {
-                StudioSectionHeader("声音控制")
+                StudioSectionHeader(t(.scriptVoiceControlTitle))
                 Spacer()
                 StudioPill(title: routeTitle, systemImage: routeIcon, color: routeColor)
                 Button {
                     viewModel.applyCompiledVoiceControlPromptToScriptStudio()
                 } label: {
-                    Label("应用到指令控制", systemImage: "arrow.down.doc")
+                    Label(t(.scriptApplyToInstruction), systemImage: "arrow.down.doc")
                 }
                 .controlSize(.small)
             }
@@ -831,7 +946,7 @@ struct VoiceControlPanel: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(VoiceControlPreset.recommendedForScriptStudio(workflow: viewModel.selectedWorkflow)) { preset in
-                        Button(preset.title) {
+                        Button(preset.title(language: interfaceLanguage)) {
                             viewModel.applyVoiceControlPreset(preset)
                         }
                         .buttonStyle(.bordered)
@@ -858,7 +973,7 @@ struct VoiceControlPanel: View {
     }
 
     private var supplementalPromptTitle: String {
-        viewModel.selectedWorkflow == .voiceDesign ? "补充声音身份描述" : "补充演绎指令"
+        viewModel.selectedWorkflow == .voiceDesign ? t(.scriptSupplementalVoiceIdentity) : t(.scriptSupplementalPerformance)
     }
 
     private var supplementalPromptBinding: Binding<String> {
@@ -883,7 +998,7 @@ struct VoiceControlPanel: View {
         case .builtin: "CustomVoice"
         case .custom: "Base Clone"
         case .voiceDesign: "VoiceDesign"
-        case .multiRole: "对话生成"
+        case .multiRole: viewModel.selectedWorkflow.title(language: interfaceLanguage)
         }
     }
 
@@ -914,8 +1029,8 @@ struct VoiceControlPanel: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Picker("选择\(definition.title)", selection: candidateSelection(text: text, candidates: candidates)) {
-                    Text("不指定").tag("")
+                Picker(t(.scriptChooseAttributeFormat, definition.title), selection: candidateSelection(text: text, candidates: candidates)) {
+                    Text(t(.scriptNotSpecified)).tag("")
                     ForEach(candidates, id: \.self) { option in
                         Text(option).tag(option)
                     }
@@ -941,7 +1056,7 @@ struct VoiceControlPanel: View {
     }
 
     private func candidates(for definition: VoiceControlAttributeDefinition) -> [String] {
-        VoiceControlAttributeCatalog.candidates(for: definition.id, workflow: viewModel.selectedWorkflow)
+        VoiceControlAttributeCatalog.candidates(for: definition.id, workflow: viewModel.selectedWorkflow, language: interfaceLanguage)
     }
 
     private func binding(for id: VoiceControlAttributeID) -> Binding<String> {

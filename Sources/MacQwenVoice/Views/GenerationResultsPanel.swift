@@ -33,7 +33,10 @@ struct GenerationResultsPanel: View {
 
     private var header: some View {
         HStack {
-            StudioSectionHeader("生成结果", subtitle: "共 \(viewModel.generationHistory.count) 条 · 每页 \(pageSize) 条")
+            StudioSectionHeader(
+                viewModel.localized(.generationResultsTitle),
+                subtitle: String(format: viewModel.localized(.generationResultsSubtitleFormat), "\(viewModel.generationHistory.count)", "\(pageSize)")
+            )
             Spacer()
         }
         .padding(.horizontal, StudioTheme.pagePadding)
@@ -45,7 +48,7 @@ struct GenerationResultsPanel: View {
     private var runningSection: some View {
         if !viewModel.generatingSegmentIDs.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                StudioSectionHeader("正在生成")
+                StudioSectionHeader(viewModel.localized(.generationRunningTitle))
                 ForEach(viewModel.segments.filter { viewModel.generatingSegmentIDs.contains($0.id) }) { segment in
                     GeneratingSegmentCard(segment: segment)
                 }
@@ -62,9 +65,18 @@ struct GenerationResultsPanel: View {
             ForEach(Array(records.enumerated()), id: \.element.id) { offset, record in
                 AudioResultRow(
                     record: record,
-                    sequenceLabel: ChineseOrdinalFormatter.item(pagination.itemRange.lowerBound + offset + 1)
+                    sequenceLabel: sequenceLabel(pagination.itemRange.lowerBound + offset + 1)
                 )
             }
+        }
+    }
+
+    private func sequenceLabel(_ index: Int) -> String {
+        switch viewModel.effectiveAppLanguage {
+        case .simplifiedChinese, .traditionalChinese:
+            return ChineseOrdinalFormatter.item(index)
+        default:
+            return "#\(index)"
         }
     }
 
@@ -77,9 +89,9 @@ struct GenerationResultsPanel: View {
     private var emptyState: some View {
         StudioPanel {
             VStack(alignment: .leading, spacing: 8) {
-                Label("还没有生成结果", systemImage: "waveform")
+                Label(viewModel.localized(.generationEmptyTitle), systemImage: "waveform")
                     .font(.headline)
-                Text("点击左侧“生成全文”后，最新生成会出现在这里。")
+                Text(viewModel.localized(.generationEmptySubtitle))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -134,10 +146,10 @@ struct GenerationResultsPanel: View {
             Divider()
                 .frame(height: 20)
 
-            Text("跳到")
+            Text(viewModel.localized(.commonJumpTo))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            TextField("页码", text: $viewModel.scriptStudioPageDraft.generationResultsJumpPageText)
+            TextField(viewModel.localized(.commonPageNumber), text: $viewModel.scriptStudioPageDraft.generationResultsJumpPageText)
                 .frame(width: 54)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit {
@@ -146,7 +158,7 @@ struct GenerationResultsPanel: View {
             Text("/ \(pagination.totalPages)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Button("跳转") {
+            Button(viewModel.localized(.commonJump)) {
                 jumpToTypedPage(pagination)
             }
         }
@@ -186,7 +198,7 @@ private struct GeneratingSegmentCard: View {
                 ProgressView(value: viewModel.generationProgress[segment.id] ?? 0, total: 1)
                     .progressViewStyle(.linear)
                 HStack {
-                    Text(viewModel.generationProgressLabel[segment.id] ?? "准备生成")
+                    Text(viewModel.generationProgressLabel[segment.id] ?? viewModel.localized(.generationPreparing))
                     Spacer()
                     Text("\(Int(((viewModel.generationProgress[segment.id] ?? 0) * 100).rounded()))%")
                 }
@@ -228,7 +240,7 @@ private struct AudioResultRow: View {
                     actionButtons
                 }
 
-                Text("prompt: \(record.instruct.isEmpty ? "未设置" : record.instruct)")
+                Text(viewModel.localized(.generationPromptFormat, record.instruct.isEmpty ? viewModel.localized(.generationPromptUnset) : record.instruct))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(showDetails ? nil : 2)
@@ -246,7 +258,7 @@ private struct AudioResultRow: View {
                     Text(viewModel.audioDurationLabel(audioID: record.id, path: record.audioPath))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Button(showDetails ? "收起详情" : "显示详情") {
+                    Button(showDetails ? viewModel.localized(.generationHideDetails) : viewModel.localized(.generationShowDetails)) {
                         showDetails.toggle()
                     }
                     .buttonStyle(.plain)
@@ -279,19 +291,22 @@ private struct AudioResultRow: View {
             Button {
                 viewModel.togglePlay(record: record)
             } label: {
-                Label(viewModel.isPlaying(record: record) ? "暂停" : "播放", systemImage: viewModel.isPlaying(record: record) ? "pause.circle" : "play.circle")
+                Label(
+                    viewModel.isPlaying(record: record) ? viewModel.localized(.commonPause) : viewModel.localized(.commonPlay),
+                    systemImage: viewModel.isPlaying(record: record) ? "pause.circle" : "play.circle"
+                )
             }
             .disabled(record.audioPath.isEmpty || record.status != .ready)
             Button {
                 viewModel.export(record: record)
             } label: {
-                Label("导出", systemImage: "square.and.arrow.up")
+                Label(viewModel.localized(.commonExport), systemImage: "square.and.arrow.up")
             }
             .disabled(record.audioPath.isEmpty || record.status != .ready)
             Button(role: .destructive) {
                 viewModel.deleteGeneration(record)
             } label: {
-                Label("删除", systemImage: "trash")
+                Label(viewModel.localized(.commonDelete), systemImage: "trash")
             }
         }
         .buttonStyle(.bordered)

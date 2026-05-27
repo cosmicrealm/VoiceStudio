@@ -2,6 +2,14 @@ import Foundation
 import Testing
 @testable import MacQwenVoiceCore
 
+private extension String {
+    var containsHanCharacters: Bool {
+        unicodeScalars.contains { scalar in
+            (0x4E00...0x9FFF).contains(Int(scalar.value))
+        }
+    }
+}
+
 @Test func textSegmenterKeepsParagraphsAndSplitsLongText() {
     let text = """
     第一段很短。
@@ -1650,6 +1658,110 @@ import Testing
     #expect(HuggingFaceEndpointPreference.load(defaults: defaults, environment: [:]) == "https://hf-mirror.com")
 }
 
+@Test func appLanguageCatalogIncludesSupportedInterfaceLanguages() {
+    #expect(AppLanguage.allCases.map(\.rawValue) == [
+        "system", "en", "zh-Hans", "zh-Hant", "ja", "ko", "de", "fr", "ru", "pt", "es", "it"
+    ])
+    #expect(AppLanguage.system.displayName == "System")
+    #expect(AppLanguage.english.displayName == "English")
+    #expect(AppLanguage.simplifiedChinese.displayName == "简体中文")
+    #expect(AppLanguage.traditionalChinese.displayName == "繁體中文")
+    #expect(AppLanguage.resolved(from: ["zh-Hant-TW"]) == .traditionalChinese)
+    #expect(AppLanguage.resolved(from: ["zh-Hans-CN"]) == .simplifiedChinese)
+    #expect(AppLanguage.resolved(from: ["es-MX"]) == .spanish)
+    #expect(AppLanguage.resolved(from: ["ar-SA"]) == .english)
+}
+
+@Test func appLanguagePreferencePersistsAndFallsBackToSystem() throws {
+    let suiteName = "VoiceStudioAppLanguagePreferenceTests-\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suiteName))
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    #expect(AppLanguagePreference.load(defaults: defaults) == .system)
+    AppLanguagePreference.save(.traditionalChinese, defaults: defaults)
+    #expect(AppLanguagePreference.load(defaults: defaults) == .traditionalChinese)
+    defaults.set("not-supported", forKey: AppLanguagePreference.key)
+    #expect(AppLanguagePreference.load(defaults: defaults) == .system)
+    AppLanguagePreference.reset(defaults: defaults)
+    #expect(AppLanguagePreference.load(defaults: defaults) == .system)
+}
+
+@Test func appLocalizerProvidesCoreTranslationsForEveryLanguage() {
+    for language in AppLanguage.interfaceLanguages {
+        let localizer = AppLocalizer(language: language)
+        for key in AppLocalizationKey.allCases {
+            #expect(!localizer.text(key).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+    }
+    #expect(AppLocalizer(language: .english).text(.settingsTitle) == "Settings")
+    #expect(AppLocalizer(language: .simplifiedChinese).text(.settingsTitle) == "设置")
+    #expect(AppLocalizer(language: .traditionalChinese).text(.settingsTitle) == "設定")
+}
+
+@Test func localizedDefaultContentProvidesNonChineseEnglishDefaults() {
+    let defaults = LocalizedDefaultContent.defaults(for: .english)
+    let values = [
+        defaults.projectTitle,
+        defaults.scriptText,
+        defaults.builtinControlInstruction,
+        defaults.voiceDesignControlInstruction,
+        defaults.voiceDesignSynthesisText,
+        defaults.cloneReferenceTranscript,
+        defaults.clonePurpose,
+        defaults.scriptRewriteStylePrompt,
+        defaults.voiceToolsStatusMessage
+    ]
+    #expect(values.allSatisfy { !$0.containsHanCharacters })
+    #expect(defaults.scriptText.contains("observation"))
+    #expect(defaults.builtinControlInstruction.contains("warm"))
+}
+
+@Test func localizedDefaultContentProvidesTraditionalChineseDefaultsWithoutSimplifiedUiTerms() {
+    let defaults = LocalizedDefaultContent.defaults(for: .traditionalChinese)
+    let combined = [
+        defaults.projectTitle,
+        defaults.builtinControlInstruction,
+        defaults.voiceDesignSynthesisText,
+        defaults.cloneReferenceTranscript,
+        defaults.clonePurpose,
+        defaults.voiceToolsStatusMessage
+    ].joined(separator: "\n")
+    #expect(combined.contains("預設") || combined.contains("專案") || combined.contains("音訊"))
+    #expect(!combined.contains("设置"))
+    #expect(!combined.contains("音频"))
+    #expect(!combined.contains("默认"))
+    #expect(!combined.contains("生成结果"))
+}
+
+@Test func localizedDefaultContentReplacesOnlyUntouchedDefaults() {
+    let english = LocalizedDefaultContent.defaults(for: .english)
+    let chinese = LocalizedDefaultContent.defaults(for: .simplifiedChinese)
+    let custom = "User edited text"
+
+    #expect(LocalizedDefaultContent.replacingDefault(chinese.scriptText, with: \.scriptText, language: .english) == english.scriptText)
+    #expect(LocalizedDefaultContent.replacingDefault(english.scriptText, with: \.scriptText, language: .simplifiedChinese) == chinese.scriptText)
+    #expect(LocalizedDefaultContent.replacingDefault(custom, with: \.scriptText, language: .english) == custom)
+}
+
+@Test func coreLabelsLocalizeWorkflowsLanguagesPlaybackAndControlCatalog() {
+    #expect(ScriptStudioWorkflow.builtin.title(language: .english) == "Premium Generation")
+    #expect(ScriptStudioWorkflow.custom.title(language: .traditionalChinese) == "克隆生成")
+    #expect(ScriptStudioLanguageOption.automatic.displayTitle(language: .english) == "Auto")
+    #expect(ScriptStudioLanguageOption.english.displayTitle(language: .simplifiedChinese) == "英文")
+    #expect(ScriptStudioDetectedLanguage.mixed.displayTitle(language: .english) == "Mixed")
+    #expect(PlaybackQueueControlState(isPlaying: false).title(language: .english) == "Play Full Audio")
+    #expect(PlaybackQueueControlState(isPlaying: true).title(language: .traditionalChinese) == "暫停全文")
+
+    let englishDefinitions = VoiceControlAttributeCatalog.definitions(for: .voiceDesign, language: .english)
+    let languageDefinition = englishDefinitions.first { $0.id == .language }
+    #expect(languageDefinition?.title == "Language")
+    #expect((languageDefinition?.candidates.count ?? 0) >= 20)
+    #expect(languageDefinition?.candidates.allSatisfy { !$0.containsHanCharacters } == true)
+
+    let traditionalDefinitions = VoiceControlAttributeCatalog.definitions(for: .voiceDesign, language: .traditionalChinese)
+    #expect(traditionalDefinitions.first { $0.id == .clarity }?.title == "清晰度")
+}
+
 @Test func qwenModelDirectoryValidatorRejectsEmptyOrPartialDirectories() throws {
     let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
     defer { try? FileManager.default.removeItem(at: root) }
@@ -1831,15 +1943,21 @@ import Testing
 @Test func workspaceSectionsExposeDedicatedSettingsPageForDeepSeekConfiguration() {
     #expect(WorkspaceSection.allCases.contains(.settings))
     #expect(WorkspaceSection.settings.title == "设置")
+    #expect(WorkspaceSection.settings.title(language: .english) == "Settings")
+    #expect(WorkspaceSection.settings.title(language: .traditionalChinese) == "設定")
     #expect(WorkspaceSection.settings.systemImage == "gearshape")
 }
 
 @Test func workspaceSectionsUseShortModelTitle() {
     #expect(WorkspaceSection.models.title == "模型")
+    #expect(WorkspaceSection.models.title(language: .english) == "Models")
+    #expect(WorkspaceSection.models.title(language: .japanese) == "モデル")
 }
 
 @Test func workspaceSectionsUseDialogueRewriteTitle() {
     #expect(WorkspaceSection.scriptRewrite.title == "对话改写")
+    #expect(WorkspaceSection.scriptRewrite.title(language: .english) == "Dialogue Rewrite")
+    #expect(WorkspaceSection.scriptRewrite.title(language: .traditionalChinese) == "對話改寫")
 }
 
 @Test func sqliteStorePersistsProjectVoiceModelAndConsent() throws {

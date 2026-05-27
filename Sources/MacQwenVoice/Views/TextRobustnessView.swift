@@ -11,7 +11,7 @@ struct TextRobustnessView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 StudioPanel {
-                    StudioSectionHeader("文本鲁棒性样例", subtitle: "用于快速检查符号、拼音、公式、跨语言文本的生成稳定性。")
+                    StudioSectionHeader(viewModel.localized(.pageTextRobustnessTitle), subtitle: viewModel.localized(.pageTextRobustnessSubtitle))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
@@ -30,7 +30,7 @@ struct TextRobustnessView: View {
                                 viewModel.updateSegments()
                                 onOpenScriptStudio()
                             } label: {
-                                Label("载入 Script Studio", systemImage: "arrow.right.doc.on.clipboard")
+                                Label(viewModel.localized(.pageTextRobustnessLoadScriptStudio), systemImage: "arrow.right.doc.on.clipboard")
                             }
                         }
                     }

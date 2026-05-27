@@ -11,16 +11,16 @@ struct VoiceDesignView: View {
     @State private var voicePendingRename: VoiceProfile?
     @State private var renameVoiceName = ""
     private static let languageOptions: [VoiceDesignLanguageOption] = [
-        VoiceDesignLanguageOption(title: "中文", value: "Chinese"),
-        VoiceDesignLanguageOption(title: "英文", value: "English"),
-        VoiceDesignLanguageOption(title: "日语", value: "Japanese"),
-        VoiceDesignLanguageOption(title: "韩语", value: "Korean"),
-        VoiceDesignLanguageOption(title: "德语", value: "German"),
-        VoiceDesignLanguageOption(title: "法语", value: "French"),
-        VoiceDesignLanguageOption(title: "俄语", value: "Russian"),
-        VoiceDesignLanguageOption(title: "葡萄牙语", value: "Portuguese"),
-        VoiceDesignLanguageOption(title: "西班牙语", value: "Spanish"),
-        VoiceDesignLanguageOption(title: "意大利语", value: "Italian")
+        VoiceDesignLanguageOption(title: "Chinese", value: "Chinese"),
+        VoiceDesignLanguageOption(title: "English", value: "English"),
+        VoiceDesignLanguageOption(title: "Japanese", value: "Japanese"),
+        VoiceDesignLanguageOption(title: "Korean", value: "Korean"),
+        VoiceDesignLanguageOption(title: "German", value: "German"),
+        VoiceDesignLanguageOption(title: "French", value: "French"),
+        VoiceDesignLanguageOption(title: "Russian", value: "Russian"),
+        VoiceDesignLanguageOption(title: "Portuguese", value: "Portuguese"),
+        VoiceDesignLanguageOption(title: "Spanish", value: "Spanish"),
+        VoiceDesignLanguageOption(title: "Italian", value: "Italian")
     ]
 
     var body: some View {
@@ -61,7 +61,7 @@ struct VoiceDesignView: View {
             renameSheet
         }
         .confirmationDialog(
-            "删除创造音色？",
+            viewModel.localized(.designDeleteTitle),
             isPresented: Binding(
                 get: { voicePendingDeletion != nil },
                 set: { if !$0 { voicePendingDeletion = nil } }
@@ -69,27 +69,27 @@ struct VoiceDesignView: View {
             titleVisibility: .visible
         ) {
             if let voice = voicePendingDeletion {
-                Button("仅删除音色记录", role: .destructive) {
+                Button(viewModel.localized(.cloneDeleteRecordOnly), role: .destructive) {
                     viewModel.deleteVoice(voice, deleteFiles: false)
                     voicePendingDeletion = nil
                 }
-                Button("删除记录并删除关联文件", role: .destructive) {
+                Button(viewModel.localized(.cloneDeleteRecordAndFiles), role: .destructive) {
                     viewModel.deleteVoice(voice, deleteFiles: true)
                     voicePendingDeletion = nil
                 }
             }
-            Button("取消", role: .cancel) {
+            Button(viewModel.localized(.commonCancel), role: .cancel) {
                 voicePendingDeletion = nil
             }
         } message: {
-            Text("删除文件只会处理 Voice Studio workspace 内的参考音频和 clone prompt。")
+            Text(viewModel.localized(.cloneDeleteMessage))
         }
     }
 
     private func modelPanel(modelID: String, availability: ModelAvailabilityViewState) -> some View {
         StudioPanel {
             HStack {
-                StudioSectionHeader("VoiceDesign 模型", subtitle: "自然语言声音创造使用 1.7B VoiceDesign。")
+                StudioSectionHeader(viewModel.localized(.pageVoiceDesignModelTitle), subtitle: viewModel.localized(.pageVoiceDesignModelSubtitle))
                 Spacer()
                 Label(availability.label, systemImage: availability.available ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                     .foregroundStyle(availability.available ? StudioTheme.success : StudioTheme.warning)
@@ -97,7 +97,7 @@ struct VoiceDesignView: View {
                     Button {
                         viewModel.downloadModel(model)
                     } label: {
-                        Label(availability.available ? "已安装" : "下载", systemImage: availability.available ? "checkmark.circle.fill" : "arrow.down.circle")
+                        Label(availability.available ? viewModel.localized(.modelInstalled) : viewModel.localized(.modelDownload), systemImage: availability.available ? "checkmark.circle.fill" : "arrow.down.circle")
                     }
                     .disabled(availability.available)
                 }
@@ -113,15 +113,15 @@ struct VoiceDesignView: View {
         StudioPanel {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top) {
-                    StudioSectionHeader("VoiceDesign 主输入", subtitle: "这里的 language、指令控制和合成文本会直接送入 1.7B VoiceDesign。")
+                    StudioSectionHeader(viewModel.localized(.pageVoiceDesignInputTitle), subtitle: viewModel.localized(.pageVoiceDesignInputSubtitle))
                     Spacer()
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("语言")
+                        Text(viewModel.localized(.designLanguage))
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
-                        Picker("语言", selection: $viewModel.voiceDesignPageDraft.language) {
+                        Picker(viewModel.localized(.designLanguage), selection: $viewModel.voiceDesignPageDraft.language) {
                             ForEach(Self.languageOptions) { option in
-                                Text(option.title).tag(option.value)
+                                Text(option.title(language: viewModel.effectiveAppLanguage)).tag(option.value)
                             }
                         }
                         .labelsHidden()
@@ -130,14 +130,14 @@ struct VoiceDesignView: View {
                     }
                 }
                 multilineEditor(
-                    title: "指令控制",
-                    subtitle: "直接作为 VoiceDesign 的 instruct/prompt 送入模型。",
+                    title: viewModel.localized(.designInstructionTitle),
+                    subtitle: viewModel.localized(.designInstructionSubtitle),
                     text: $viewModel.voiceDesignPageDraft.controlInstruction,
                     minHeight: 132
                 )
                 multilineEditor(
-                    title: "合成文本 / 试听文本",
-                    subtitle: "模型要朗读的正文内容；保存角色音色时会作为这次参考声音的文本。",
+                    title: viewModel.localized(.designSynthesisTitle),
+                    subtitle: viewModel.localized(.designSynthesisSubtitle),
                     text: $viewModel.voiceDesignPageDraft.synthesisText,
                     minHeight: 92
                 )
@@ -150,19 +150,19 @@ struct VoiceDesignView: View {
                             language: viewModel.voiceDesignPageDraft.language
                         )
                     } label: {
-                        Label(viewModel.isGeneratingVoiceDesign ? "生成中" : "生成参考声音", systemImage: "sparkles")
+                        Label(viewModel.isGeneratingVoiceDesign ? viewModel.localized(.designGenerating) : viewModel.localized(.designGenerateReferenceVoice), systemImage: "sparkles")
                     }
                     .disabled(!canGenerate || viewModel.isGeneratingVoiceDesign)
                     AudioPlayButton(
-                        "播放参考声音",
-                        pauseTitle: "暂停参考声音",
+                        viewModel.localized(.designPlayReferenceVoice),
+                        pauseTitle: viewModel.localized(.designPauseReferenceVoice),
                         item: viewModel.voiceDesignPreviewPath.map { AudioPlaybackItem.file(path: $0, context: "voice-design-preview") }
                     )
                     Button {
                         saveVoiceName = ""
                         isSaveVoiceSheetPresented = true
                     } label: {
-                        Label("保存为音色", systemImage: "bookmark")
+                        Label(viewModel.localized(.designSaveAsVoice), systemImage: "bookmark")
                     }
                     .disabled(viewModel.voiceDesignPreviewPath == nil)
                     Spacer()
@@ -179,17 +179,17 @@ struct VoiceDesignView: View {
     private var enhancementPanel: some View {
         StudioPanel {
             VStack(alignment: .leading, spacing: 12) {
-                StudioSectionHeader("增强控制指令", subtitle: "控制类型和 DeepSeek 都只生成候选指令；点击应用后才会写回上方指令控制。")
+                StudioSectionHeader(viewModel.localized(.designEnhanceControlTitle), subtitle: viewModel.localized(.designEnhanceControlSubtitle))
                 deepSeekStatusPanel
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        StudioSectionHeader("控制类型", subtitle: "展开后可选择并编辑 VoiceDesign 控制属性。")
+                        StudioSectionHeader(viewModel.localized(.scriptVoiceControlTitle), subtitle: viewModel.localized(.designControlTypeSubtitle))
                         Spacer()
                         Button {
                             viewModel.voiceDesignPageDraft.isControlExpanded.toggle()
                         } label: {
                             Label(
-                                viewModel.voiceDesignPageDraft.isControlExpanded ? "收起" : "展开",
+                                viewModel.voiceDesignPageDraft.isControlExpanded ? viewModel.localized(.scriptCollapse) : viewModel.localized(.scriptExpand),
                                 systemImage: viewModel.voiceDesignPageDraft.isControlExpanded ? "chevron.up" : "slider.horizontal.3"
                             )
                         }
@@ -206,20 +206,20 @@ struct VoiceDesignView: View {
                     Button {
                         viewModel.voiceDesignPageDraft.generatedControlInstruction = viewModel.compiledVoiceDesignPrompt
                     } label: {
-                        Label("生成初始控制指令", systemImage: "text.insert")
+                        Label(viewModel.localized(.designGenerateInitialInstruction), systemImage: "text.insert")
                     }
                     Button {
                         applyGeneratedControlInstruction()
                     } label: {
-                        Label("应用初始指令", systemImage: "arrow.up.circle")
+                        Label(viewModel.localized(.designApplyInitialInstruction), systemImage: "arrow.up.circle")
                     }
                     .disabled(viewModel.voiceDesignPageDraft.generatedControlInstruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     Spacer()
                 }
                 .buttonStyle(.bordered)
                 multilineEditor(
-                    title: "初始控制指令",
-                    subtitle: "由控制类型组合生成，可手动编辑；不会自动影响上方主输入。",
+                    title: viewModel.localized(.designInitialInstructionTitle),
+                    subtitle: viewModel.localized(.designInitialInstructionSubtitle),
                     text: $viewModel.voiceDesignPageDraft.generatedControlInstruction,
                     minHeight: 96
                 )
@@ -227,21 +227,21 @@ struct VoiceDesignView: View {
                     Button {
                         enhanceCurrentControlInstructionWithDeepSeek()
                     } label: {
-                        Label(viewModel.isEnhancingVoiceDescription ? "增强中" : "使用 DeepSeek 增强", systemImage: "wand.and.stars")
+                        Label(viewModel.isEnhancingVoiceDescription ? viewModel.localized(.designEnhancing) : viewModel.localized(.designUseDeepSeekEnhance), systemImage: "wand.and.stars")
                     }
                     .disabled(!viewModel.isDeepSeekConfigured || viewModel.isEnhancingVoiceDescription)
                     Button {
                         applyDeepSeekEnhancedInstruction()
                     } label: {
-                        Label("应用增强指令", systemImage: "arrow.up.circle.fill")
+                        Label(viewModel.localized(.designApplyEnhancedInstruction), systemImage: "arrow.up.circle.fill")
                     }
                     .disabled(viewModel.voiceDesignPageDraft.deepSeekEnhancedInstruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     Spacer()
                 }
                 .buttonStyle(.bordered)
                 multilineEditor(
-                    title: "DeepSeek 增强指令",
-                    subtitle: "DeepSeek 的联网增强输出会显示在这里，确认后再应用到上方指令控制。",
+                    title: viewModel.localized(.designDeepSeekInstructionTitle),
+                    subtitle: viewModel.localized(.designDeepSeekInstructionSubtitle),
                     text: $viewModel.voiceDesignPageDraft.deepSeekEnhancedInstruction,
                     minHeight: 112
                 )
@@ -252,21 +252,21 @@ struct VoiceDesignView: View {
     private var deepSeekStatusPanel: some View {
         HStack(alignment: .center, spacing: 10) {
             Label(
-                viewModel.isDeepSeekConfigured ? "DeepSeek 已配置" : "DeepSeek 未配置",
+                viewModel.isDeepSeekConfigured ? viewModel.localized(.settingsDeepSeekConfigured) : viewModel.localized(.settingsDeepSeekUnconfigured),
                 systemImage: viewModel.isDeepSeekConfigured ? "checkmark.circle.fill" : "circle"
             )
             .font(.caption.weight(.semibold))
             .foregroundStyle(viewModel.isDeepSeekConfigured ? StudioTheme.success : .secondary)
             Text(viewModel.isDeepSeekConfigured
-                 ? "可使用联网增强生成候选控制指令。"
-                 : "在“设置”里配置 API key 后可使用联网增强。")
+                 ? viewModel.localized(.designDeepSeekConfiguredHint)
+                 : viewModel.localized(.designDeepSeekMissingHint))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()
             Button {
                 onOpenSettings()
             } label: {
-                Label("打开设置", systemImage: "gearshape")
+                Label(viewModel.localized(.commonOpenSettings), systemImage: "gearshape")
             }
             .buttonStyle(.bordered)
         }
@@ -278,7 +278,7 @@ struct VoiceDesignView: View {
     private var voiceDesignProgressPanel: some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack {
-                Label("生成进度", systemImage: viewModel.isGeneratingVoiceDesign ? "waveform" : "timer")
+                Label(viewModel.localized(.designGenerationProgress), systemImage: viewModel.isGeneratingVoiceDesign ? "waveform" : "timer")
                     .font(.caption.weight(.semibold))
                 Spacer()
                 Text("\(Int((viewModel.voiceDesignProgress * 100).rounded()))%")
@@ -325,10 +325,10 @@ struct VoiceDesignView: View {
     private var savedVoicesPanel: some View {
         StudioPanel {
             VStack(alignment: .leading, spacing: 10) {
-                StudioSectionHeader("已保存创造音色", subtitle: "管理、重命名、删除或发送到 Voice Studio 使用。")
+                StudioSectionHeader(viewModel.localized(.designSavedTitle), subtitle: viewModel.localized(.designSavedSubtitle))
                 let designVoices = viewModel.voices.filter { $0.kind == .voiceDesign }
                 if designVoices.isEmpty {
-                    Text("还没有保存的创造音色。生成参考声音并保存后会显示在这里。")
+                    Text(viewModel.localized(.designEmptySaved))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -349,8 +349,8 @@ struct VoiceDesignView: View {
                             }
                             HStack {
                                 AudioPlayButton(
-                                    "试听参考音",
-                                    pauseTitle: "暂停参考音",
+                                    viewModel.localized(.designPreviewReference),
+                                    pauseTitle: viewModel.localized(.designPausePreviewReference),
                                     item: voice.referenceAudioPath
                                         .map { AudioPlaybackItem.file(path: $0, context: "voice-design-saved-\(voice.id)") }
                                 )
@@ -359,18 +359,18 @@ struct VoiceDesignView: View {
                                     viewModel.selectVoice(voice)
                                     onOpenScriptStudio()
                                 } label: {
-                                    Label("用于生成", systemImage: "arrow.right.circle")
+                                    Label(viewModel.localized(.cloneUseForGeneration), systemImage: "arrow.right.circle")
                                 }
                                 Button {
                                     voicePendingRename = voice
                                     renameVoiceName = voice.name
                                 } label: {
-                                    Label("重命名", systemImage: "pencil")
+                                    Label(viewModel.localized(.cloneRename), systemImage: "pencil")
                                 }
                                 Button(role: .destructive) {
                                     voicePendingDeletion = voice
                                 } label: {
-                                    Label("删除", systemImage: "trash")
+                                    Label(viewModel.localized(.commonDelete), systemImage: "trash")
                                 }
                             }
                             .buttonStyle(.bordered)
@@ -385,27 +385,27 @@ struct VoiceDesignView: View {
     private var saveVoiceSheet: some View {
         let validation = VoiceDesignSaveNameValidation.state(for: saveVoiceName, voices: viewModel.voices)
         return VStack(alignment: .leading, spacing: 14) {
-            Text("保存为角色音色")
+            Text(viewModel.localized(.designSaveRoleTitle))
                 .font(.headline)
-            Text("这里的名称会写入已保存创造音色列表，并绑定当前参考声音与试听文本。")
+            Text(viewModel.localized(.designSaveRoleSubtitle))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            TextField("输入要保存的音色名称", text: $saveVoiceName)
+            TextField(viewModel.localized(.designSaveNamePlaceholder), text: $saveVoiceName)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit {
                     submitSaveVoiceIfPossible(validation)
                 }
-            if let message = validation.message {
+            if let message = localizedValidationMessage(validation) {
                 Label(message, systemImage: validation == .available ? "checkmark.circle" : "exclamationmark.triangle")
                     .font(.caption)
                     .foregroundStyle(validation == .available ? StudioTheme.success : StudioTheme.warning)
             }
             HStack {
                 Spacer()
-                Button("取消") {
+                Button(viewModel.localized(.commonCancel)) {
                     isSaveVoiceSheetPresented = false
                 }
-                Button("保存") {
+                Button(viewModel.localized(.commonSave)) {
                     submitSaveVoiceIfPossible(validation)
                 }
                 .keyboardShortcut(.defaultAction)
@@ -418,19 +418,19 @@ struct VoiceDesignView: View {
 
     private var renameSheet: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("重命名创造音色")
+            Text(viewModel.localized(.designRenameTitle))
                 .font(.headline)
-            TextField("新的音色名称", text: $renameVoiceName)
+            TextField(viewModel.localized(.cloneRenamePlaceholder), text: $renameVoiceName)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit {
                     submitRename()
                 }
             HStack {
                 Spacer()
-                Button("取消") {
+                Button(viewModel.localized(.commonCancel)) {
                     voicePendingRename = nil
                 }
-                Button("保存") {
+                Button(viewModel.localized(.commonSave)) {
                     submitRename()
                 }
                 .keyboardShortcut(.defaultAction)
@@ -471,31 +471,42 @@ struct VoiceDesignView: View {
         let instruction = viewModel.voiceDesignPageDraft.generatedControlInstruction.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !instruction.isEmpty else { return }
         viewModel.voiceDesignPageDraft.controlInstruction = instruction
-        viewModel.statusMessage = "已将初始控制指令应用到上方主输入"
+        viewModel.statusMessage = viewModel.localized(.designStatusAppliedInitial)
     }
 
     private func applyDeepSeekEnhancedInstruction() {
         let instruction = viewModel.voiceDesignPageDraft.deepSeekEnhancedInstruction.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !instruction.isEmpty else { return }
         viewModel.voiceDesignPageDraft.controlInstruction = instruction
-        viewModel.statusMessage = "已将 DeepSeek 增强指令应用到上方主输入"
+        viewModel.statusMessage = viewModel.localized(.designStatusAppliedEnhanced)
     }
 
     private func enhanceCurrentControlInstructionWithDeepSeek() {
         let source = enhancementInstructionSource
         guard !source.isEmpty else {
-            viewModel.statusMessage = "请先填写上方指令控制，或生成初始控制指令"
+            viewModel.statusMessage = viewModel.localized(.designStatusNeedInstruction)
             return
         }
         viewModel.enhanceVoiceDescriptionWithDeepSeek(
             description: source,
             language: viewModel.voiceDesignPageDraft.language,
-            purpose: "VoiceDesign 声音创造",
-            controlType: "VoiceDesign 控制指令增强",
+            purpose: viewModel.localized(.designDeepSeekPurpose),
+            controlType: viewModel.localized(.designDeepSeekControlType),
             synthesisText: viewModel.voiceDesignPageDraft.synthesisText,
             currentInstruction: source
         ) { enhanced in
             viewModel.voiceDesignPageDraft.deepSeekEnhancedInstruction = enhanced
+        }
+    }
+
+    private func localizedValidationMessage(_ validation: VoiceDesignSaveNameValidationState) -> String? {
+        switch validation {
+        case .empty:
+            viewModel.localized(.designNameEmpty)
+        case .duplicate:
+            viewModel.localized(.designNameDuplicate)
+        case .available:
+            nil
         }
     }
 }
@@ -504,8 +515,10 @@ private struct VoiceDesignControlPanel: View {
     @EnvironmentObject private var viewModel: StudioViewModel
     @Binding var controlInstruction: String
 
+    private var interfaceLanguage: AppLanguage { viewModel.effectiveAppLanguage }
+
     private var definitions: [VoiceControlAttributeDefinition] {
-        VoiceControlAttributeCatalog.definitions(for: .voiceDesign)
+        VoiceControlAttributeCatalog.definitions(for: .voiceDesign, language: interfaceLanguage)
     }
 
     private var columns: [GridItem] {
@@ -517,13 +530,13 @@ private struct VoiceDesignControlPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                StudioSectionHeader("控制类型", subtitle: "可选择并编辑 VoiceDesign 控制维度。")
+                StudioSectionHeader(viewModel.localized(.scriptVoiceControlTitle), subtitle: viewModel.localized(.designControlTypeSubtitle))
                 Spacer()
                 Button {
                     viewModel.randomizeVoiceControlProfile(for: .voiceDesign)
                     controlInstruction = viewModel.compiledVoiceDesignPrompt
                 } label: {
-                    Label("随机生成", systemImage: "dice")
+                    Label(viewModel.localized(.scriptRandomGenerate), systemImage: "dice")
                 }
                 .controlSize(.small)
                 StudioPill(title: "VoiceDesign", systemImage: "sparkles", color: .purple)
@@ -537,9 +550,9 @@ private struct VoiceDesignControlPanel: View {
                             controlInstruction = viewModel.compiledVoiceDesignPrompt
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(preset.title)
+                                Text(preset.title(language: interfaceLanguage))
                                     .font(.caption.weight(.semibold))
-                                Text(preset.category.title)
+                                Text(preset.category.title(language: interfaceLanguage))
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
@@ -569,8 +582,8 @@ private struct VoiceDesignControlPanel: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Picker("选择\(definition.title)", selection: candidateSelection(text: text, candidates: candidates)) {
-                    Text("不指定").tag("")
+                Picker(viewModel.localized(.scriptChooseAttributeFormat, definition.title), selection: candidateSelection(text: text, candidates: candidates)) {
+                    Text(viewModel.localized(.scriptNotSpecified)).tag("")
                     ForEach(candidates, id: \.self) { option in
                         Text(option).tag(option)
                     }
@@ -596,7 +609,7 @@ private struct VoiceDesignControlPanel: View {
     }
 
     private func candidates(for definition: VoiceControlAttributeDefinition) -> [String] {
-        VoiceControlAttributeCatalog.candidates(for: definition.id, workflow: .voiceDesign)
+        VoiceControlAttributeCatalog.candidates(for: definition.id, workflow: .voiceDesign, language: interfaceLanguage)
     }
 
     private func binding(for id: VoiceControlAttributeID) -> Binding<String> {
@@ -636,7 +649,7 @@ private struct VoiceDesignControlPanel: View {
                 .foregroundStyle(.secondary)
             Picker(title, selection: selection) {
                 ForEach(options, id: \.self) { option in
-                    Text(option.isEmpty ? (emptyTitle ?? "默认") : option).tag(option)
+                    Text(option.isEmpty ? (emptyTitle ?? viewModel.localized(.scriptNotSpecified)) : option).tag(option)
                 }
             }
             .labelsHidden()
@@ -665,4 +678,31 @@ private struct VoiceDesignLanguageOption: Identifiable {
     let value: String
 
     var id: String { value }
+
+    func title(language: AppLanguage) -> String {
+        switch value {
+        case "Chinese":
+            return ScriptStudioLanguageOption.chinese.displayTitle(language: language)
+        case "English":
+            return ScriptStudioLanguageOption.english.displayTitle(language: language)
+        case "Japanese":
+            return ScriptStudioLanguageOption.japanese.displayTitle(language: language)
+        case "Korean":
+            return ScriptStudioLanguageOption.korean.displayTitle(language: language)
+        case "German":
+            return ScriptStudioLanguageOption.german.displayTitle(language: language)
+        case "French":
+            return ScriptStudioLanguageOption.french.displayTitle(language: language)
+        case "Russian":
+            return ScriptStudioLanguageOption.russian.displayTitle(language: language)
+        case "Portuguese":
+            return ScriptStudioLanguageOption.portuguese.displayTitle(language: language)
+        case "Spanish":
+            return ScriptStudioLanguageOption.spanish.displayTitle(language: language)
+        case "Italian":
+            return ScriptStudioLanguageOption.italian.displayTitle(language: language)
+        default:
+            return title
+        }
+    }
 }

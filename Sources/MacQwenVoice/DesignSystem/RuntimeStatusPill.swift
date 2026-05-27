@@ -10,21 +10,25 @@ struct RuntimeStatusPill: View {
         let runtimeReady = inferenceReady && viewModel.runtimeHealth.audioToolsAvailable && viewModel.runtimeHealth.downloadToolsAvailable
         let ready = runtimeReady && availability.available
         StudioPill(
-            title: ready ? "真实推理" : (runtimeReady ? "模型未就绪" : (inferenceReady ? missingToolTitle : "运行时不可用")),
+            title: ready
+                ? viewModel.localized(.runtimeStatusRealInference)
+                : (runtimeReady
+                    ? viewModel.localized(.runtimeStatusModelNotReady)
+                    : (inferenceReady ? missingToolTitle : viewModel.localized(.runtimeStatusUnavailable))),
             systemImage: ready ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
             color: ready ? StudioTheme.success : StudioTheme.warning
         )
         .layoutPriority(2)
-        .help(runtimeReady ? "\(viewModel.runtimeHealth.message)；当前生效模型 \(activeModelID)；\(availability.label)：\(availability.path)" : viewModel.runtimeHealth.message)
+        .help(runtimeReady ? "\(viewModel.runtimeHealth.message); active model \(activeModelID); \(availability.label): \(availability.path)" : viewModel.runtimeHealth.message)
     }
 
     private var missingToolTitle: String {
         if !viewModel.runtimeHealth.downloadToolsAvailable {
-            return "下载工具缺失"
+            return viewModel.localized(.runtimeStatusDownloadToolMissing)
         }
         if !viewModel.runtimeHealth.audioToolsAvailable {
-            return "音频工具缺失"
+            return viewModel.localized(.runtimeStatusAudioToolMissing)
         }
-        return "运行时需修复"
+        return viewModel.localized(.runtimeStatusNeedsRepair)
     }
 }

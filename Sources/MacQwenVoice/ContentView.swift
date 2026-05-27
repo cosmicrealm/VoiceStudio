@@ -25,9 +25,11 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(VoiceStudioDefaults.appDisplayName)
                     .font(.title3.weight(.semibold))
-                Text("离线 Qwen3-TTS 创作台")
+                Text(viewModel.localized(.appTagline))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.leading, 26)
             .padding(.trailing, 18)
@@ -38,14 +40,22 @@ struct ContentView: View {
                     Button {
                         selectedSection = section
                     } label: {
-                        Label(section.title, systemImage: section.systemImage)
-                            .font(.system(size: 14, weight: selectedSection == section ? .semibold : .regular))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 16)
-                            .padding(.trailing, 12)
-                            .padding(.vertical, 9)
-                            .background(selectedSection == section ? Color.accentColor.opacity(0.14) : Color.clear)
-                            .clipShape(RoundedRectangle(cornerRadius: StudioTheme.cornerRadius, style: .continuous))
+                        Label {
+                            Text(section.title(language: viewModel.effectiveAppLanguage))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.78)
+                                .truncationMode(.tail)
+                        } icon: {
+                            Image(systemName: section.systemImage)
+                                .frame(width: 18)
+                        }
+                        .font(.system(size: 14, weight: selectedSection == section ? .semibold : .regular))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading, 16)
+                        .padding(.trailing, 12)
+                        .padding(.vertical, 9)
+                        .background(selectedSection == section ? Color.accentColor.opacity(0.14) : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: StudioTheme.cornerRadius, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(selectedSection == section ? Color.accentColor : .primary)

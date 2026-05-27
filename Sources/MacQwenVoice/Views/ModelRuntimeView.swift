@@ -7,16 +7,16 @@ struct ModelRuntimeView: View {
 
     var body: some View {
         List {
-            Section("工作目录") {
+            Section(viewModel.localized(.modelWorkspaceTitle)) {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(viewModel.usesDefaultWorkspace ? "默认 workspace" : "自定义 workspace")
+                        Text(viewModel.usesDefaultWorkspace ? viewModel.localized(.modelDefaultWorkspace) : viewModel.localized(.modelCustomWorkspace))
                             .font(.headline)
                         Text(viewModel.paths.root.path)
                             .font(.caption)
                             .foregroundStyle(.blue)
                             .textSelection(.enabled)
-                        Text("默认路径：\(viewModel.defaultWorkspacePath)")
+                        Text(viewModel.localized(.modelDefaultPathFormat, viewModel.defaultWorkspacePath))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .textSelection(.enabled)
@@ -26,34 +26,34 @@ struct ModelRuntimeView: View {
                         Button {
                             viewModel.chooseWorkspaceDirectory()
                         } label: {
-                            Label("选择 Workspace", systemImage: "folder.badge.gearshape")
+                            Label(viewModel.localized(.modelChooseWorkspace), systemImage: "folder.badge.gearshape")
                         }
                         Button {
                             viewModel.resetToDefaultWorkspace()
                         } label: {
-                            Label("恢复默认", systemImage: "arrow.uturn.backward.circle")
+                            Label(viewModel.localized(.modelResetDefault), systemImage: "arrow.uturn.backward.circle")
                         }
                         .disabled(viewModel.usesDefaultWorkspace)
                         Button {
                             NSWorkspace.shared.activateFileViewerSelecting([viewModel.paths.root])
                         } label: {
-                            Label("在 Finder 打开", systemImage: "folder")
+                            Label(viewModel.localized(.modelOpenInFinder), systemImage: "folder")
                         }
                     }
                 }
-                Text("模型默认下载到当前 workspace/models；你也可以切换整个 workspace，或为单个模型选择已下载路径。切换 workspace 后会重新加载数据库、模型状态和后端运行目录。")
+                Text(viewModel.localized(.modelWorkspaceDescription))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("运行时健康状态") {
+            Section(viewModel.localized(.modelRuntimeHealth)) {
                 HStack {
                     RuntimeStatusPill()
                     Spacer()
                     Button {
                         viewModel.refreshRuntimeHealth()
                     } label: {
-                        Label("重新检查", systemImage: "arrow.clockwise")
+                        Label(viewModel.localized(.modelRecheck), systemImage: "arrow.clockwise")
                     }
                 }
                 Text(viewModel.runtimeHealth.message)
@@ -65,24 +65,24 @@ struct ModelRuntimeView: View {
                 optionalDependencyGrid
             }
 
-            Section("模型下载源") {
-                Picker("下载源", selection: $viewModel.huggingFaceEndpoint) {
-                    Text("HF Mirror").tag(HuggingFaceDownloadPlan.mirrorEndpoint)
-                    Text("官方源").tag(HuggingFaceDownloadPlan.officialEndpoint)
+            Section(viewModel.localized(.modelDownloadSource)) {
+                Picker(viewModel.localized(.modelDownloadSource), selection: $viewModel.huggingFaceEndpoint) {
+                    Text(viewModel.localized(.commonHFMirror)).tag(HuggingFaceDownloadPlan.mirrorEndpoint)
+                    Text(viewModel.localized(.commonOfficialSource)).tag(HuggingFaceDownloadPlan.officialEndpoint)
                 }
                 .pickerStyle(.segmented)
-                TextField("自定义 HF_ENDPOINT，可留空使用官方源", text: $viewModel.huggingFaceEndpoint)
+                TextField(viewModel.localized(.modelCustomEndpointPlaceholder), text: $viewModel.huggingFaceEndpoint)
                     .textFieldStyle(.roundedBorder)
                     .textSelection(.enabled)
-                Text(viewModel.huggingFaceEndpoint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "当前下载源：Hugging Face 官方源" : "当前下载源：\(viewModel.huggingFaceEndpoint)")
+                Text(viewModel.huggingFaceEndpoint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? viewModel.localized(.modelCurrentSourceOfficial) : viewModel.localized(.modelCurrentSourceFormat, viewModel.huggingFaceEndpoint))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
 
-            modelSection("Lite 包：0.6B CustomVoice + Base", models: viewModel.catalog.liteBundle, note: "预览和基础机型优先；CustomVoice 用于精品生成，Base 用于克隆生成和对话生成。")
-            modelSection("Pro 包：1.7B CustomVoice + Base", models: viewModel.catalog.proBundle, note: "正式导出质量优先；CustomVoice 控制力更强，Base 克隆质量更高。")
-            modelSection("Design 包：1.7B VoiceDesign", models: viewModel.catalog.advancedBundle, note: "自然语言声音创造；满意后保存为可复用角色音色。")
+            modelSection(viewModel.localized(.modelLiteBundleTitle), models: viewModel.catalog.liteBundle, note: viewModel.localized(.modelLiteBundleNote))
+            modelSection(viewModel.localized(.modelProBundleTitle), models: viewModel.catalog.proBundle, note: viewModel.localized(.modelProBundleNote))
+            modelSection(viewModel.localized(.modelDesignBundleTitle), models: viewModel.catalog.advancedBundle, note: viewModel.localized(.modelDesignBundleNote))
         }
     }
 
@@ -98,23 +98,23 @@ struct ModelRuntimeView: View {
     private var runtimeInstallControls: some View {
         VStack(alignment: .leading, spacing: 8) {
             if viewModel.runtimeHealth.needsRuntimeRepair {
-                Text("首次在新 Mac 上使用时，需要先安装本机运行环境：Python 3.12、MLX、mlx-audio、transformers、Hugging Face CLI 和 ffmpeg。安装完成后，模型下载和推理会使用 Voice Studio 的专用 Python 环境。")
+                Text(viewModel.localized(.runtimeInstallFirstUse))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
                 if viewModel.runtimeHealth.realInferenceAvailable, !viewModel.runtimeHealth.audioToolsAvailable {
-                    Text("当前 MLX 推理已经可用，但 ffmpeg 缺失。请先安装 Homebrew，再执行 brew install python@3.12 ffmpeg，或使用安装/修复让程序自动尝试安装。")
+                    Text(viewModel.localized(.runtimeInstallAudioToolWarning))
                         .font(.caption)
                         .foregroundStyle(StudioTheme.warning)
                         .textSelection(.enabled)
                 }
                 if viewModel.runtimeHealth.realInferenceAvailable, !viewModel.runtimeHealth.downloadToolsAvailable {
-                    Text("当前缺少 Hugging Face CLI 命令 hf，模型下载会失败。安装/修复会执行 pip install -U \"huggingface_hub[cli]\" hf_transfer，并把 hf 加入 Voice Studio runtime PATH。")
+                    Text(viewModel.localized(.runtimeInstallDownloadToolWarning))
                         .font(.caption)
                         .foregroundStyle(StudioTheme.warning)
                         .textSelection(.enabled)
                 }
-                Text("如果日志出现 LibreSSL / urllib3 / SSL 相关提示，通常是系统 Python 过旧；安装器会优先安装并切换 Homebrew python@3.12。如果本机没有 Homebrew 且没有 Python 3.12，日志会提示手动安装命令。")
+                Text(viewModel.localized(.runtimeInstallSSLHint))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
@@ -122,7 +122,7 @@ struct ModelRuntimeView: View {
                     Button {
                         viewModel.installRuntimeEnvironment()
                     } label: {
-                        Label(viewModel.isInstallingRuntime ? "正在安装运行环境" : "安装/修复运行环境", systemImage: "wrench.and.screwdriver")
+                        Label(viewModel.isInstallingRuntime ? viewModel.localized(.runtimeInstallInstalling) : viewModel.localized(.runtimeInstallRepair), systemImage: "wrench.and.screwdriver")
                     }
                     .disabled(viewModel.isInstallingRuntime)
                     if viewModel.isInstallingRuntime {
@@ -134,7 +134,7 @@ struct ModelRuntimeView: View {
             if viewModel.isInstallingRuntime || !viewModel.runtimeInstallLog.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Text("安装进度")
+                        Text(viewModel.localized(.runtimeInstallProgress))
                             .font(.caption.weight(.semibold))
                         Spacer()
                         Text(viewModel.runtimeInstallPhase)
@@ -142,7 +142,7 @@ struct ModelRuntimeView: View {
                             .foregroundStyle(.secondary)
                     }
                     ProgressView(value: viewModel.runtimeInstallProgress)
-                    Text(viewModel.runtimeInstallLog.isEmpty ? "等待安装输出..." : viewModel.runtimeInstallLog)
+                    Text(viewModel.runtimeInstallLog.isEmpty ? viewModel.localized(.runtimeInstallWaitingOutput) : viewModel.runtimeInstallLog)
                         .font(.caption.monospaced())
                         .textSelection(.enabled)
                         .lineLimit(16)
@@ -151,7 +151,7 @@ struct ModelRuntimeView: View {
                         .background(StudioTheme.subtleFill)
                         .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                 }
-                DisclosureGroup("查看完整安装日志") {
+                DisclosureGroup(viewModel.localized(.runtimeInstallFullLog)) {
                     Text(viewModel.runtimeInstallLog)
                         .font(.caption.monospaced())
                         .textSelection(.enabled)
@@ -187,10 +187,10 @@ struct ModelRuntimeView: View {
     private var optionalDependencyGrid: some View {
         Group {
             if !viewModel.runtimeHealth.optionalDependencies.isEmpty {
-                DisclosureGroup("可选扩展") {
+                DisclosureGroup(viewModel.localized(.runtimeOptionalExtensions)) {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 8)], alignment: .leading, spacing: 8) {
                         ForEach(viewModel.runtimeHealth.optionalDependencies.sorted(by: { $0.key < $1.key }), id: \.key) { item in
-                            Label(item.value ? "\(item.key) 已安装" : "\(item.key) 未安装", systemImage: item.value ? "checkmark.circle" : "circle")
+                            Label(item.value ? "\(item.key) \(viewModel.localized(.modelInstalled))" : "\(item.key) \(viewModel.localized(.modelMissing))", systemImage: item.value ? "checkmark.circle" : "circle")
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -226,18 +226,18 @@ struct ModelRuntimeView: View {
                         Button {
                             viewModel.downloadModel(model)
                         } label: {
-                            Label(availability.available ? "已安装" : "下载", systemImage: availability.available ? "checkmark.circle.fill" : "arrow.down.circle")
+                            Label(availability.available ? viewModel.localized(.modelInstalled) : viewModel.localized(.modelDownload), systemImage: availability.available ? "checkmark.circle.fill" : "arrow.down.circle")
                         }
                         .disabled(availability.available)
                         Button {
                             viewModel.markModelReady(model)
                         } label: {
-                            Label("使用默认路径", systemImage: "checkmark.circle")
+                            Label(viewModel.localized(.modelUseDefaultPath), systemImage: "checkmark.circle")
                         }
                         Button {
                             viewModel.chooseModelDirectory(for: model)
                         } label: {
-                            Label("选择本地路径", systemImage: "folder")
+                            Label(viewModel.localized(.modelChooseLocalPath), systemImage: "folder")
                         }
                         Text(viewModel.downloadCommand(for: model))
                             .textSelection(.enabled)
@@ -270,11 +270,11 @@ struct ModelRuntimeView: View {
     private func precisionSelector(for model: QwenModelSpec) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("VoiceDesign 精度/版本")
+                Text(viewModel.localized(.modelPrecisionTitle))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("当前：\(viewModel.activeModelPrecisionTitle(for: model))")
+                Text(viewModel.localized(.modelCurrentValueFormat, viewModel.activeModelPrecisionTitle(for: model)))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -288,7 +288,7 @@ struct ModelRuntimeView: View {
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(selected ? StudioTheme.success : .primary)
                             Spacer()
-                            Text(ready ? "已安装" : "未安装")
+                            Text(ready ? viewModel.localized(.modelInstalled) : viewModel.localized(.modelMissing))
                                 .font(.caption2.weight(.semibold))
                                 .foregroundStyle(ready ? StudioTheme.success : StudioTheme.warning)
                         }
@@ -303,7 +303,7 @@ struct ModelRuntimeView: View {
                         Button {
                             viewModel.selectModelPrecisionChoice(choice, for: model)
                         } label: {
-                            Label(selected ? "正在使用" : "使用此版本", systemImage: selected ? "checkmark" : "arrow.right.circle")
+                            Label(selected ? viewModel.localized(.modelUsingThisVersion) : viewModel.localized(.modelUseThisVersion), systemImage: selected ? "checkmark" : "arrow.right.circle")
                         }
                         .disabled(!ready || selected)
                         .controlSize(.small)
